@@ -1,5 +1,7 @@
+// lib/features/vehicle_management/data/remote/report_model.dart
+
 class ReportModel {
-  final int? id;
+  final int id;
   final int userId;
   final String type;
   final String description;
@@ -7,7 +9,7 @@ class ReportModel {
   final DateTime createdAt;
 
   ReportModel({
-    this.id,
+    required this.id,
     required this.userId,
     required this.type,
     required this.description,
@@ -26,14 +28,12 @@ class ReportModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // AJUSTADO: Método para generar el JSON para crear un reporte.
+  Map<String, dynamic> toJsonForCreation() {
     return {
-      'id': id,
-      'userId': userId,
       'type': type,
       'description': description,
       'driverName': driverName,
-      'createdAt': createdAt.toIso8601String(),
     };
   }
 }

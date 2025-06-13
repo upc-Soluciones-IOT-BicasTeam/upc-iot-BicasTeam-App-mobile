@@ -1,5 +1,8 @@
+// lib/features/vehicle_management/presentation/pages/carrier/reports/reports_carrier_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/report_model.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/repository/report_repository.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/report_service.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/reports/new_report_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/shipments/shipments_screen2.dart';
@@ -8,11 +11,13 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
 
 class ReportsCarrierScreen extends StatefulWidget {
+  final int userId;
   final String name;
   final String lastName;
 
   const ReportsCarrierScreen({
     Key? key,
+    required this.userId,
     required this.name,
     required this.lastName,
   }) : super(key: key);
@@ -22,6 +27,7 @@ class ReportsCarrierScreen extends StatefulWidget {
 }
 
 class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with SingleTickerProviderStateMixin {
+  late final ReportRepository _reportRepository;
   List<ReportModel> _reports = [];
   bool _isLoading = true;
   late AnimationController _animationController;
@@ -30,6 +36,7 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
   @override
   void initState() {
     super.initState();
+    _reportRepository = ReportRepository(reportService: ReportService());
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -41,38 +48,53 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
     _fetchReports();
   }
 
+  // AJUSTADO: Lógica de obtención y filtrado por nombre de conductor
   Future<void> _fetchReports() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    // 1. Construir el nombre completo del conductor actual
+    final driverFullName = '${widget.name} ${widget.lastName}';
+
     try {
-      final reportService = ReportService();
-      final reports = await reportService.getAllReports();
-      setState(() {
-        _reports = reports.where((report) => report.driverName == widget.name).toList();
-        _isLoading = false;
-      });
-      _animationController.forward();
+      // 2. Obtener todos los reportes desde el repositorio
+      final allReports = await _reportRepository.getAllReports();
+      if (mounted) {
+        setState(() {
+          // 3. Filtrar los reportes donde 'driverName' coincida con el nombre completo
+          _reports = allReports
+              .where((report) => report.driverName.trim() == driverFullName.trim())
+              .toList();
+          _isLoading = false;
+        });
+        _animationController.forward(from: 0.0);
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cargar los reportes'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
   Future<void> _navigateToNewReportScreen() async {
-    final ReportModel? newReport = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => NewReportScreen(
-          name: widget.name,
-          lastName: widget.lastName,
+          userId: widget.userId,
+          driverName: '${widget.name} ${widget.lastName}',
         ),
       ),
     );
-
-    if (newReport != null && newReport.driverName == widget.name) {
-      setState(() {
-        _reports.add(newReport);
-      });
-    }
+    // Vuelve a cargar los reportes para reflejar cualquier nueva adición
+    _fetchReports();
   }
 
   @override
@@ -86,19 +108,20 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2C2F38),
-        title: Row(
+        title: const Row(
           children: [
             Icon(Icons.report, color: Colors.amber),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Text(
               'Tus Reportes',
-              style: TextStyle(color: Colors.grey, fontSize: 22, fontWeight: FontWeight.w600),
+              style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w600),
             ),
           ],
         ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       backgroundColor: const Color(0xFF1A1F24),
-      drawer: _buildDrawer(context),
+      drawer: _buildDrawer(),
       body: _isLoading
           ? const Center(
         child: CircularProgressIndicator(
@@ -111,17 +134,22 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
         child: _reports.isEmpty
             ? const Center(
           child: Text(
-            'No realizaste ningún reporte.',
+            'No has realizado ningún reporte.',
             style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
           ),
         )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: _reports.length,
-          itemBuilder: (context, index) {
-            final report = _reports[index];
-            return _buildReportCard(report);
-          },
+            : RefreshIndicator(
+          onRefresh: _fetchReports,
+          color: Colors.amber,
+          backgroundColor: const Color(0xFF2C2F38),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: _reports.length,
+            itemBuilder: (context, index) {
+              final report = _reports[index];
+              return _buildReportCard(report);
+            },
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -139,7 +167,7 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      color: const Color(0xFFFFFFFF),
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -148,55 +176,28 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
             _buildReportHeader(report),
             const SizedBox(height: 10),
             _buildReportDetails('Tipo', report.type),
-            _buildReportDetails('Descripción', report.description), // Descripción completa
-            _buildReportDetails('Fecha', report.createdAt.toLocal().toString()),
+            _buildReportDetails('Descripción', report.description),
+            _buildReportDetails('Fecha', '${report.createdAt.toLocal().day}/${report.createdAt.toLocal().month}/${report.createdAt.toLocal().year}'),
           ],
         ),
       ),
     );
   }
 
-
   Widget _buildReportHeader(ReportModel report) {
     return Row(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [Colors.amber.shade400, Colors.amber.shade700],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          padding: const EdgeInsets.all(10),
-          child:
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: const Color(0xFFEA8E00),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.network(
-                'assets/images/bell.png',
-                fit: BoxFit.cover,
-                width: 40,
-                height: 40,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Icons.error,
-                    color: Colors.red,
-                    size: 30,
-                  );
-                },
-              ),
-            ),
-          ),
+        CircleAvatar(
+          radius: 25,
+          backgroundColor: Colors.amber.shade100,
+          child: const Icon(Icons.warning_amber_rounded, color: Colors.amber, size: 30),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
             report.driverName,
-            style: const TextStyle(color: Colors.black, fontSize: 16),
+            style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -211,22 +212,19 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
         children: [
           Text(
             label,
-            style: const TextStyle(color: Colors.black87, fontSize: 14),
+            style: const TextStyle(color: Colors.black54, fontSize: 14, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(color: Colors.black87, fontSize: 14),
-            maxLines: null,
+            style: const TextStyle(color: Colors.black87, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-
-
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer() {
     return Drawer(
       backgroundColor: const Color(0xFF2C2F38),
       child: ListView(
@@ -248,10 +246,10 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHICULOS', VehicleDetailCarrierScreenScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTES', this.widget),
+          _buildDrawerItem(Icons.directions_car, 'VEHICULOS',VehicleDetailCarrierScreenScreen(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.local_shipping, 'ENVIOS',ShipmentsScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName) ),
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
@@ -261,12 +259,7 @@ class _ReportsCarrierScreenState extends State<ReportsCarrierScreen> with Single
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,

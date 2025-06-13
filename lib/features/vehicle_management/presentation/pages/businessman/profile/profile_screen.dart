@@ -145,31 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'type': userType,
                 };
 
-                try {
-                  final response = await profileService.updateProfileByEmailAndPassword(
-                    dialogEmailController.text,
-                    dialogPasswordController.text,
-                    updatedProfileData,
-                  );
 
-                  if (response) {
-                    _showSnackbar('Datos actualizados correctamente');
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileScreen(
-                          name: nameController.text,
-                          lastName: lastNameController.text,
-                        ),
-                      ),
-                    );
-                  } else {
-                    _showSnackbar('Error al actualizar los datos');
-                  }
-                } catch (e) {
-                  _showSnackbar('Error al realizar la actualización');
-                }
               },
               child: const Text('Confirmar'),
             ),
@@ -339,12 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,

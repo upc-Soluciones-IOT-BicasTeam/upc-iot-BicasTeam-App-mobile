@@ -15,12 +15,7 @@ class MoviGestionApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => LoginScreen(
-          onLoginClicked: (username, password) {
-            // Este callback no es necesario, ya que la lógica de navegación se maneja en la pantalla LoginScreen
-          },
-          onRegisterClicked: () {
-            Navigator.pushNamed(context, '/register');
-          },
+
         ),
 
       },

@@ -10,11 +10,13 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 
 
 class VehicleDetailCarrierScreenScreen extends StatefulWidget {
+  final int userId;
   final String name;
   final String lastName;
 
   const VehicleDetailCarrierScreenScreen({
     Key? key,
+    required this.userId,
     required this.name,
     required this.lastName,
   }) : super(key: key);
@@ -283,10 +285,10 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHICULOS', VehicleDetailCarrierScreenScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'VEHICULOS',this.widget),
+          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
@@ -296,12 +298,7 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,
