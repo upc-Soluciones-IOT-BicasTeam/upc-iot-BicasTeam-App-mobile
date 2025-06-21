@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String baseUrl = 'https://upc-iot-2956-bicasteam-movigestion.proxy.beeceptor.com';
+  static const String baseUrl = 'http://localhost:8080';
 
   // Rutas de API
   static const String profile = '/api/profiles';

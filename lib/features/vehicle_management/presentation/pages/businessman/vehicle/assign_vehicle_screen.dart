@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_model.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_service.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/repository/vehicle_repository.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/profile/profile_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/shipments/shipments_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/vehicle/vehicles_screen.dart';
@@ -12,67 +13,38 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/carrier_profiles/carrier_profiles.dart';
 
 class AssignVehicleScreen extends StatefulWidget {
-  final Function(Map<String, String>) onVehicleAdded;
   final String name;
   final String lastName;
 
   const AssignVehicleScreen({
     Key? key,
-    required this.onVehicleAdded,
     required this.name,
     required this.lastName,
   }) : super(key: key);
 
   @override
-  _AssignVehicleScreenState createState() => _AssignVehicleScreenState();
+  State<AssignVehicleScreen> createState() => _AssignVehicleScreenState();
 }
 
-class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTickerProviderStateMixin {
+class _AssignVehicleScreenState extends State<AssignVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController modelController = TextEditingController();
-  final TextEditingController plateController = TextEditingController();
-  final TextEditingController assignedDriverController = TextEditingController();
-  final TextEditingController colorController = TextEditingController();
-  final TextEditingController lastInspectionDateController = TextEditingController();
-  final VehicleService vehicleService = VehicleService();
+  final plateController = TextEditingController();
+  final brandController = TextEditingController();
+  final modelController = TextEditingController();
+  final assignedDriverController = TextEditingController();
+  final colorController = TextEditingController();
+  final maxLoadController = TextEditingController();
+  final lastInspectionDateController = TextEditingController();
 
+  final vehicleRepository = VehicleRepository(vehicleService: VehicleService());
   String? _selectedImageBase64;
-  double engineValue = 50;
-  double fuelValue = 50;
-  double tiresValue = 50;
-  double electricalSystemValue = 50;
-  double transmissionTempValue = 50;
 
   Future<void> _pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-
+    final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
     if (result != null && result.files.single.bytes != null) {
       setState(() {
         _selectedImageBase64 = base64Encode(result.files.single.bytes!);
       });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Imagen seleccionada y convertida a base64',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'No se seleccionó ninguna imagen',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
     }
   }
 
@@ -80,48 +52,37 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
     if (_formKey.currentState!.validate()) {
       final vehicle = VehicleModel(
         id: 0,
-        userId: 1,
+        managerId: 1, // Ajusta según sea necesario
         licensePlate: plateController.text,
+        brand: brandController.text,
         model: modelController.text,
-        engine: engineValue.toInt(),
-        fuel: fuelValue.toInt(),
-        tires: tiresValue.toInt(),
-        electricalSystem: electricalSystemValue.toInt(),
-        transmissionTemperature: transmissionTempValue.toInt(),
-        driverName: assignedDriverController.text,
+        temperature: 0,
+        humidity: 0,
+        maxLoad: double.tryParse(maxLoadController.text) ?? 0,
+        driverId: int.tryParse(assignedDriverController.text) ?? 0,
         vehicleImage: _selectedImageBase64 ?? '',
         color: colorController.text,
         lastTechnicalInspectionDate: DateFormat('yyyy-MM-dd').parse(lastInspectionDateController.text),
+        location: '', // No se ingresa ubicación manualmente
+        speed: '0',
         createdAt: DateTime.now(),
       );
 
       try {
-        final success = await vehicleService.createVehicle(vehicle);
+        final success = await vehicleRepository.createVehicle(vehicle);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Vehículo asignado exitosamente'),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text('Vehículo creado'), backgroundColor: Colors.green),
           );
-          Navigator.pop(context);
+          Navigator.pop(context, true); // <-- Aquí devuelve true para refrescar la lista
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error al asignar el vehículo'),
-              backgroundColor: Colors.redAccent,
-            ),
+            const SnackBar(content: Text('Error al crear vehículo'), backgroundColor: Colors.red),
           );
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Error al enviar la solicitud: $e',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.redAccent,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -130,14 +91,7 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF2C2F38),
-        title: const Text(
-          'Asignar Vehículo',
-          style: TextStyle(color: Colors.white),
-        ),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Asignar Vehículo')),
       backgroundColor: const Color(0xFF1E1F24),
       drawer: _buildDrawer(),
       body: SingleChildScrollView(
@@ -145,66 +99,24 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionContainer(_buildTextField('Modelo del vehículo', modelController)),
+              _buildTextField('Marca del vehículo', brandController),
+              _buildTextField('Modelo del vehículo', modelController),
+              _buildTextField('Placa del vehículo', plateController),
+              _buildTextField('ID del conductor asignado', assignedDriverController),
+              _buildTextField('Color del vehículo', colorController),
+              _buildTextField('Carga máxima (Kg)', maxLoadController, isNumber: true),
+              _buildDateField('Fecha última inspección', lastInspectionDateController),
               const SizedBox(height: 15),
-              _buildSectionContainer(_buildTextField('Placa del vehículo', plateController)),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildTextField('Conductor asignado', assignedDriverController)),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildSliderField('Porcentaje de Motor', engineValue, (value) {
-                setState(() {
-                  engineValue = value;
-                });
-              })),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildSliderField('Porcentaje de Combustible', fuelValue, (value) {
-                setState(() {
-                  fuelValue = value;
-                });
-              })),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildSliderField('Porcentaje de Neumáticos', tiresValue, (value) {
-                setState(() {
-                  tiresValue = value;
-                });
-              })),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildSliderField('Porcentaje del Sistema Eléctrico', electricalSystemValue, (value) {
-                setState(() {
-                  electricalSystemValue = value;
-                });
-              })),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildSliderField('Temperatura de Transmisión', transmissionTempValue, (value) {
-                setState(() {
-                  transmissionTempValue = value;
-                });
-              })),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildTextField('Color del vehículo', colorController)),
-              const SizedBox(height: 15),
-              _buildSectionContainer(_buildDateField('Fecha de última inspección', lastInspectionDateController)),
-              const SizedBox(height: 20),
               _buildImagePicker(),
               const SizedBox(height: 30),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _createVehicle,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEA8E00),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 40),
-                    elevation: 5,
-                  ),
-                  child: const Text(
-                    'Asignar Vehículo',
-                    style: TextStyle(color: Colors.black),
-                  ),
+              ElevatedButton(
+                onPressed: _createVehicle,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEA8E00),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 40),
                 ),
+                child: const Text('Asignar Vehículo', style: TextStyle(color: Colors.black)),
               ),
             ],
           ),
@@ -213,140 +125,52 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
     );
   }
 
-  Widget _buildSectionContainer(Widget child) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F353F),
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  Widget _buildTextField(String label, TextEditingController controller, {bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: const Color(0xFF3A414B),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        style: const TextStyle(color: Colors.white),
+        validator: (value) => value == null || value.isEmpty ? 'Ingrese $label' : null,
       ),
-      child: child,
     );
   }
-
-  Widget _buildSliderField(String label, double value, ValueChanged<double> onChanged) {
-    String getConditionText(double value) {
-      if (value > 75) {
-        return "En excelente estado";
-      } else if (value > 60) {
-        return "En buen estado";
-      } else if (value > 35) {
-        return "Presenta algunas fallas";
-      } else {
-        return "En mal estado";
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$label: ${value.toInt()}%',
-          style: const TextStyle(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          getConditionText(value),
-          style: TextStyle(
-            fontSize: 14,
-            color: value > 75
-                ? Colors.green
-                : value > 60
-                ? Colors.amber
-                : value > 35
-                ? Colors.orange
-                : Colors.red,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Slider(
-          value: value,
-          min: 0,
-          max: 100,
-          divisions: 100,
-          label: '${value.toInt()}%',
-          onChanged: onChanged,
-          activeColor: const Color(0xFFEA8E00),
-          inactiveColor: const Color(0xFF2F353F),
-        ),
-      ],
-    );
-  }
-
 
   Widget _buildDateField(String label, TextEditingController controller) {
-    return TextFormField(
-      controller: controller,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextFormField(
+        controller: controller,
+        readOnly: true,
+        onTap: () async {
+          final pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(2000),
+            lastDate: DateTime.now(),
+          );
+          if (pickedDate != null) {
+            controller.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+          }
+        },
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: const Color(0xFF3A414B),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          suffixIcon: const Icon(Icons.calendar_today, color: Color(0xFFEA8E00)),
         ),
-        filled: true,
-        fillColor: const Color(0xFF3A414B),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.calendar_today, color: Color(0xFFEA8E00)),
-          onPressed: () async {
-            DateTime? pickedDate = await showDatePicker(
-              context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2101),
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.dark(
-                      primary: const Color(0xFFEA8E00),
-                      onPrimary: Colors.white,
-                      surface: const Color(0xFF2C2F38),
-                      onSurface: Colors.white,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (pickedDate != null) {
-              setState(() {
-                controller.text = DateFormat('yyyy-MM-dd').format(pickedDate);
-              });
-            }
-          },
-        ),
+        style: const TextStyle(color: Colors.white),
       ),
-      style: const TextStyle(color: Colors.white),
-    );
-  }
-
-  Widget _buildTextField(String label, TextEditingController controller) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: Colors.white70),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-        filled: true,
-        fillColor: const Color(0xFF3A414B),
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor, ingrese $label';
-        }
-        return null;
-      },
-      style: const TextStyle(color: Colors.white),
     );
   }
 
@@ -354,44 +178,24 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Subir imagen del vehículo',
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 10),
+        const Text('Imagen del vehículo', style: TextStyle(color: Colors.white70)),
+        const SizedBox(height: 8),
         _selectedImageBase64 == null
             ? ElevatedButton.icon(
-          onPressed: _pickImage,
-          icon: const Icon(Icons.upload, color: Colors.white),
-          label: const Text('Seleccionar Imagen', style: TextStyle(color: Colors.black)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFEA8E00),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-          ),
-        )
+                onPressed: _pickImage,
+                icon: const Icon(Icons.upload),
+                label: const Text('Seleccionar Imagen'),
+              )
             : Column(
-          children: [
-            Image.memory(
-              base64Decode(_selectedImageBase64!),
-              height: 150,
-              fit: BoxFit.cover,
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.edit, color: Colors.white),
-              label: const Text('Cambiar Imagen', style: TextStyle(color: Colors.black)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFEA8E00),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+                children: [
+                  Image.memory(base64Decode(_selectedImageBase64!), height: 150, fit: BoxFit.cover),
+                  ElevatedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Cambiar Imagen'),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -400,47 +204,28 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
     return Drawer(
       backgroundColor: const Color(0xFF2C2F38),
       child: ListView(
-        padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
             child: Column(
               children: [
-                Image.asset(
-                  'assets/images/login_logo.png',
-                  height: 100,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${widget.name} ${widget.lastName} - Gerente',
-                  style: const TextStyle(color: Colors.grey,  fontSize: 16),
-                ),
+                Image.asset('assets/images/login_logo.png', height: 100),
+                Text('${widget.name} ${widget.lastName} - Gerente', style: const TextStyle(color: Colors.white70)),
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.people, 'TRANSPORTISTAS',
-              CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHÍCULOS', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
-          const SizedBox(height: 160),
+          _buildDrawerItem(Icons.person, 'Perfil', ProfileScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.people, 'Transportistas', CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'Reportes', ReportsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'Vehículos', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.local_shipping, 'Envíos', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white),
-            title: const Text('CERRAR SESIÓN', style: TextStyle(color: Colors.white)),
+            leading: const Icon(Icons.logout),
+            title: const Text('Cerrar sesión'),
             onTap: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
-                  ),
-                ),
-                    (Route<dynamic> route) => false,
+                MaterialPageRoute(builder: (context) => LoginScreen(onLoginClicked: (_, __) {}, onRegisterClicked: () {})),
+                (route) => false,
               );
             },
           ),
@@ -449,15 +234,12 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> with SingleTi
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String title, Widget page) {
+  Widget _buildDrawerItem(IconData icon, String title, Widget screen) {
     return ListTile(
       leading: Icon(icon, color: Colors.white),
       title: Text(title, style: const TextStyle(color: Colors.white)),
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => page),
-        );
+        Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
       },
     );
   }
