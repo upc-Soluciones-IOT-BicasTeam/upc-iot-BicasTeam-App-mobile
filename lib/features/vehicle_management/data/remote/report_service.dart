@@ -45,13 +45,13 @@ class ReportService {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(report.toJson()),
+        body: json.encode(report.toJsonForCreation()),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        print('Failed to create report. Status code: ${response.statusCode}');
+        print('Failed to create report. Status: ${response.statusCode}, Body: ${response.body}');
         return false;
       }
     } catch (e) {
@@ -59,7 +59,6 @@ class ReportService {
       return false;
     }
   }
-
   Future<bool> deleteReport(int id) async {
     final url = Uri.parse('${AppConstants.baseUrl}${AppConstants.report}/$id');
     try {

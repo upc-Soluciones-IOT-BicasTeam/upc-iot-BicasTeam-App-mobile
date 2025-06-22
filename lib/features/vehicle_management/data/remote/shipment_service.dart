@@ -4,21 +4,14 @@ import 'package:movigestion_mobile/core/app_constants.dart';
 import 'shipment_model.dart';
 
 class ShipmentService {
-  Future<List<ShipmentModel>> getAllShipments() async {
+  Future<List<ShipmentModel>> getAllShipments() async { // SIN CAMBIOS
     final url = Uri.parse('${AppConstants.baseUrl}${AppConstants.shipment}');
-    try {
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        return data.map((json) => ShipmentModel.fromJson(json)).toList();
-      } else {
-        print('Failed to load shipments. Status code: ${response.statusCode}');
-        throw Exception('Failed to load shipments');
-      }
-    } catch (e) {
-      print('Error fetching shipments: $e');
-      rethrow;
+    final response = await http.get(url);
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      return data.map((json) => ShipmentModel.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load shipments');
     }
   }
 
@@ -39,19 +32,21 @@ class ShipmentService {
     }
   }
 
+  // AJUSTADO: Acepta el modelo y usa toJsonForCreation
   Future<bool> createShipment(ShipmentModel shipment) async {
     final url = Uri.parse('${AppConstants.baseUrl}${AppConstants.shipment}');
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(shipment.toJson()),
+        // Usa el método que genera el JSON correcto para la creación
+        body: json.encode(shipment.toJsonForCreation()),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (response.statusCode == 200 || response.statusCode == 201) { // 201 es 'Created'
         return true;
       } else {
-        print('Failed to create shipment. Status code: ${response.statusCode}');
+        print('Failed to create shipment. Status: ${response.statusCode}, Body: ${response.body}');
         return false;
       }
     } catch (e) {
@@ -97,8 +92,5 @@ class ShipmentService {
       return false;
     }
   }
-
-
-
 
 }

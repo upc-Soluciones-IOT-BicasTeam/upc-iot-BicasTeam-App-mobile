@@ -1,10 +1,14 @@
-import 'dart:convert';
+// lib/features/vehicle_management/presentation/pages/login_register/user_registration_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:movigestion_mobile/core/app_constants.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/remote/profile_service.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/repository/profile_repository.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/profile/profile_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/profile/profile_screen2.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
+
+import '../../../data/remote/auth_service.dart';
+import '../../../data/remote/user_service.dart';
 
 class UserRegistrationScreen extends StatefulWidget {
   final String selectedRole;
@@ -18,185 +22,169 @@ class UserRegistrationScreen extends StatefulWidget {
   _UserRegistrationScreenState createState() => _UserRegistrationScreenState();
 }
 
-class _UserRegistrationScreenState extends State<UserRegistrationScreen> with SingleTickerProviderStateMixin {
+class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _usernameController = TextEditingController();
-  final _dniController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _termsAccepted = false;
-  bool _formValid = false;
-  String _errorMessage = '';
 
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late final ProfileRepository _profileRepository;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
+    _profileRepository = ProfileRepository(
+      authService: AuthService(),
+      profileService: ProfileService(),
+      userService: UserService(),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-    _nameController.addListener(_validateForm);
-    _usernameController.addListener(_validateForm);
-    _dniController.addListener(_validateForm);
-    _passwordController.addListener(_validateForm);
-    _confirmPasswordController.addListener(_validateForm);
   }
 
-  void _validateForm() {
-    setState(() {
-      if (_nameController.text.isEmpty ||
-          _usernameController.text.isEmpty ||
-          _dniController.text.isEmpty ||
-          _passwordController.text.isEmpty ||
-          _confirmPasswordController.text.isEmpty) {
-        _errorMessage = 'Todos los campos son obligatorios';
-        _formValid = false;
-      } else if (_passwordController.text != _confirmPasswordController.text) {
-        _errorMessage = 'Las contraseñas no coinciden';
-        _formValid = false;
-      } else if (!_termsAccepted) {
-        _errorMessage = 'Debes aceptar los Términos y Condiciones';
-        _formValid = false;
-      } else {
-        _errorMessage = '';
-        _formValid = true;
-      }
-    });
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
   Future<void> _submitRegistrationForm() async {
-    final url = Uri.parse('${AppConstants.baseUrl}${AppConstants.profile}');
+    if (_formKey.currentState!.validate()) {
+      if (!_termsAccepted) {
+        _showSnackbar('Debes aceptar los Términos y Condiciones', Colors.orange);
+        return;
+      }
 
-    final body = {
-      "name": _nameController.text,
-      "lastName": _usernameController.text,
-      "email": _dniController.text,
-      "password": _passwordController.text,
-      "type": widget.selectedRole,
-    };
+      showDialog(context: context, builder: (context) => const Center(child: CircularProgressIndicator()), barrierDismissible: false);
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(body),
+      final success = await _profileRepository.registerUserAndProfile(
+        name: _nameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        role: widget.selectedRole,
       );
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registro exitoso')),
-        );
-        _animationController.forward();
+      Navigator.pop(context); // Cierra el indicador de carga
+
+      if (success) {
+        _showSnackbar('Registro exitoso', Colors.green);
         await Future.delayed(const Duration(seconds: 1));
         _navigateBasedOnRole();
       } else {
-        setState(() {
-          _errorMessage = 'Error al registrar usuario: ${response.statusCode}';
-        });
+        _showSnackbar('Error en el registro. El email podría ya estar en uso.', Colors.red);
       }
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Error al realizar la solicitud';
-      });
     }
   }
 
   void _navigateBasedOnRole() {
+    Widget targetScreen;
     if (widget.selectedRole == 'Gerente') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfileScreen(
-            name: _nameController.text,
-            lastName: _usernameController.text,
-          ),
-        ),
+      targetScreen = ProfileScreen(
+        name: _nameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
       );
-    } else if (widget.selectedRole == 'Transportista') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ProfileScreen2(
-            name: _nameController.text,
-            lastName: _usernameController.text,
-          ),
-        ),
+    } else {
+      targetScreen = ProfileScreen2(
+          userId: _nameController.hashCode,
+        name: _nameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
       );
     }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => targetScreen),
+          (Route<dynamic> route) => false,
+    );
+  }
+
+  void _showSnackbar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: color, behavior: SnackBarBehavior.floating),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1F24), // Fondo oscuro moderno
+      backgroundColor: const Color(0xFF1E1F24),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 60),
-            FadeTransition(
-              opacity: _fadeAnimation,
-              child: Image.asset(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Image.asset(
                 'assets/images/login_logo.png',
-                height: 120,
+                height: 100,
               ),
-            ),
-            // Logo en la parte superior
-            Image.asset(
-              'assets/images/login_logo.png',
-              height: 100,
-            ),
-            const SizedBox(height: 40),
-            const SizedBox(height: 30),
-            Text(
-              'Registro de ${widget.selectedRole}',
-              style: const TextStyle(
-                color: Colors.amber,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildTextField('Nombre', _nameController),
-            const SizedBox(height: 20),
-            _buildTextField('Apellido', _usernameController),
-            const SizedBox(height: 20),
-            _buildTextField('Email', _dniController),
-            const SizedBox(height: 20),
-            _buildTextField('Contraseña', _passwordController, obscureText: true),
-            const SizedBox(height: 20),
-            _buildTextField('Confirmar Contraseña', _confirmPasswordController, obscureText: true),
-            const SizedBox(height: 20),
-            _buildTermsCheckbox(),
-            const SizedBox(height: 20),
-            if (_errorMessage.isNotEmpty)
+              const SizedBox(height: 30),
               Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                'Registro de ${widget.selectedRole}',
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            const SizedBox(height: 20),
-            _buildSubmitButton(),
-            const SizedBox(height: 20),
-            _buildLoginButton(),
-          ],
+              const SizedBox(height: 20),
+              _buildTextFormField('Nombre', _nameController, (value) {
+                if (value == null || value.isEmpty) return 'El nombre es obligatorio';
+                return null;
+              }),
+              const SizedBox(height: 20),
+              _buildTextFormField('Apellido', _lastNameController, (value) {
+                if (value == null || value.isEmpty) return 'El apellido es obligatorio';
+                return null;
+              }),
+              const SizedBox(height: 20),
+              _buildTextFormField('Email', _emailController, (value) {
+                if (value == null || !value.contains('@')) return 'Ingrese un email válido';
+                return null;
+              }),
+              const SizedBox(height: 20),
+              _buildTextFormField('Contraseña', _passwordController, (value) {
+                if (value == null || value.length < 6) return 'La contraseña debe tener al menos 6 caracteres';
+                return null;
+              }, obscureText: true),
+              const SizedBox(height: 20),
+              _buildTextFormField('Confirmar Contraseña', _confirmPasswordController, (value) {
+                if (value != _passwordController.text) return 'Las contraseñas no coinciden';
+                return null;
+              }, obscureText: true),
+              const SizedBox(height: 10),
+              _buildTermsCheckbox(),
+              const SizedBox(height: 20),
+              _buildSubmitButton(),
+              const SizedBox(height: 20),
+              _buildLoginButton(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, {bool obscureText = false}) {
-    return TextField(
+  Widget _buildTextFormField(String label, TextEditingController controller, String? Function(String?)? validator, {bool obscureText = false}) {
+    return TextFormField(
       controller: controller,
       obscureText: obscureText,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white70),
@@ -206,6 +194,7 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> with Si
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide.none,
         ),
+        errorStyle: const TextStyle(color: Colors.redAccent),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       ),
       style: const TextStyle(color: Colors.white),
@@ -220,14 +209,16 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> with Si
           onChanged: (bool? newValue) {
             setState(() {
               _termsAccepted = newValue ?? false;
-              _validateForm();
             });
           },
           activeColor: Colors.amber,
+          checkColor: Colors.black,
         ),
-        const Text(
-          'Confirmar Términos y Condiciones',
-          style: TextStyle(color: Colors.white70),
+        const Flexible(
+          child: Text(
+            'Acepto los Términos y Condiciones',
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
       ],
     );
@@ -235,9 +226,9 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> with Si
 
   Widget _buildSubmitButton() {
     return ElevatedButton(
-      onPressed: _formValid ? _submitRegistrationForm : null,
+      onPressed: _submitRegistrationForm,
       style: ElevatedButton.styleFrom(
-        backgroundColor: _formValid ? Colors.amber : Colors.grey,
+        backgroundColor: Colors.amber,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
         ),
@@ -257,18 +248,10 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> with Si
   Widget _buildLoginButton() {
     return TextButton(
       onPressed: () {
-        Navigator.push(
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (context) => LoginScreen(
-              onLoginClicked: (username, password) {
-                print('Usuario: $username, Contraseña: $password');
-              },
-              onRegisterClicked: () {
-                print('Registrarse');
-              },
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (Route<dynamic> route) => false,
         );
       },
       child: const Text(

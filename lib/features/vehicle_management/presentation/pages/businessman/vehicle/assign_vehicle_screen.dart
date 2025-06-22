@@ -226,6 +226,7 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> {
                 context,
                 MaterialPageRoute(builder: (context) => LoginScreen(onLoginClicked: (_, __) {}, onRegisterClicked: () {})),
                 (route) => false,
+
               );
             },
           ),

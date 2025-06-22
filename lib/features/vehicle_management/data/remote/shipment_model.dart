@@ -1,3 +1,5 @@
+// lib/features/vehicle_management/data/remote/shipment_model.dart
+
 class ShipmentModel {
   final int id;
   final int userId;
@@ -29,15 +31,14 @@ class ShipmentModel {
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // AJUSTADO: Se crea un método para generar el JSON para crear un envío
+  // que coincide con `CreateShipmentResource` de la API.
+  Map<String, dynamic> toJsonForCreation() {
     return {
-      'id': id,
-      'userId': userId,
       'destiny': destiny,
       'description': description,
-      'createdAt': createdAt.toIso8601String(),
-      'status': status,
       'driverName': driverName,
+      'status': status,
     };
   }
 }

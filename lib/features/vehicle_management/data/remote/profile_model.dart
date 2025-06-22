@@ -1,35 +1,37 @@
+// lib/features/vehicle_management/data/remote/profile_model.dart
+
 class ProfileModel {
   final int id;
+  final int idCredential; // Corresponde al ID del usuario
   final String name;
   final String lastName;
-  final String email;
-  final String type;
+  final String? telephone; // El teléfono puede no estar presente
 
   ProfileModel({
     required this.id,
+    required this.idCredential,
     required this.name,
     required this.lastName,
-    required this.email,
-    required this.type,
+    this.telephone,
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
       id: json['id'],
+      idCredential: json['idCredential'],
       name: json['name'],
       lastName: json['lastName'],
-      email: json['email'],
-      type: json['type'],
+      telephone: json['telephone'],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  // Este toJson es para el cuerpo de la solicitud de actualización (CreateProfileResource)
+  Map<String, dynamic> toJsonForUpdate() {
     return {
-      'id': id,
+      'idCredential': idCredential,
       'name': name,
       'lastName': lastName,
-      'email': email,
-      'type': type,
+      'telephone': telephone,
     };
   }
 }

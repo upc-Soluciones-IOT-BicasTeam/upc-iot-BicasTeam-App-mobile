@@ -8,11 +8,14 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/vehicle/vehicle_detail_carrier_screen.dart';
 
 class ProfileScreen2 extends StatefulWidget {
+  final int userId;
+
   final String name;
   final String lastName;
 
   const ProfileScreen2({
     Key? key,
+    required this.userId,
     required this.name,
     required this.lastName,
   }) : super(key: key);
@@ -142,31 +145,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                   'type': userType,
                 };
 
-                try {
-                  final response = await profileService.updateProfileByEmailAndPassword(
-                    dialogEmailController.text,
-                    dialogPasswordController.text,
-                    updatedProfileData,
-                  );
 
-                  if (response) {
-                    _showSnackbar('Datos actualizados correctamente');
-
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileScreen2(
-                          name: nameController.text,
-                          lastName: lastNameController.text,
-                        ),
-                      ),
-                    );
-                  } else {
-                    _showSnackbar('Error al actualizar los datos');
-                  }
-                } catch (e) {
-                  _showSnackbar('Error al realizar la actualización');
-                }
               },
               child: const Text('Confirmar'),
             ),
@@ -323,10 +302,10 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHICULOS', VehicleDetailCarrierScreenScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'VEHICULOS', VehicleDetailCarrierScreenScreen(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
@@ -336,12 +315,7 @@ class _ProfileScreen2State extends State<ProfileScreen2> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,

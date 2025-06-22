@@ -1,10 +1,10 @@
+// lib/features/vehicle_management/presentation/pages/login_register/register_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/user_registration_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  final VoidCallback onNextClicked;
-
-  const RegisterScreen({Key? key, required this.onNextClicked}) : super(key: key);
+  const RegisterScreen({Key? key}) : super(key: key);
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -25,6 +25,12 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   void _onRoleSelected(String role) {
@@ -58,41 +64,55 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1F24), // Fondo oscuro moderno
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 60),
-            Image.asset(
-              'assets/images/login_logo.png',
-              height: 120,
-            ),
-            const SizedBox(height: 40),
-            _buildRoleButton('Gerente'),
-            const SizedBox(height: 16),
-            _buildRoleButton('Transportista'),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: _navigateToUserRegistration,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFA000),
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+      backgroundColor: const Color(0xFF1E1F24),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/login_logo.png',
+                height: 120,
+              ),
+              const SizedBox(height: 40),
+              const Text(
+                'Selecciona tu rol',
+                style: TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 30),
+              _buildRoleButton('Gerente'),
+              const SizedBox(height: 16),
+              _buildRoleButton('Transportista'),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _navigateToUserRegistration,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFA000),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: const Text(
+                  'SIGUIENTE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              child: const Text(
-                'Siguiente',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

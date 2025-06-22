@@ -326,12 +326,7 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,

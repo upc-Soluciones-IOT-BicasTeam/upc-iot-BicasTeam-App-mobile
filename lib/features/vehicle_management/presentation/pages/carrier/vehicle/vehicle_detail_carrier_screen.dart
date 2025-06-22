@@ -9,11 +9,13 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
 
 class VehicleDetailCarrierScreenScreen extends StatefulWidget {
+  final int userId;
   final String name;
   final String lastName;
 
   const VehicleDetailCarrierScreenScreen({
     Key? key,
+    required this.userId,
     required this.name,
     required this.lastName,
   }) : super(key: key);
@@ -315,12 +317,7 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                 (Route<dynamic> route) => false,

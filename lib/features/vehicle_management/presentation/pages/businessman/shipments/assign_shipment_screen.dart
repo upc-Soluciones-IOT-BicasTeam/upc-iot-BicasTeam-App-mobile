@@ -51,7 +51,7 @@ class _AssignShipmentScreenState extends State<AssignShipmentScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('https://app-241107014459.azurewebsites.net/api/shipments'),
+        Uri.parse('http://localhost:8080/api/shipments'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'driverName': driverName,
@@ -203,12 +203,7 @@ class _AssignShipmentScreenState extends State<AssignShipmentScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
+
                   ),
                 ),
                     (Route<dynamic> route) => false,

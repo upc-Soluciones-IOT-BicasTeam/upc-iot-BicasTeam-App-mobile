@@ -1,3 +1,5 @@
+// lib/features/vehicle_management/presentation/pages/login_register/login_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/profile_service.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/repository/profile_repository.dart';
@@ -5,21 +7,23 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/profile/profile_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/profile/profile_screen2.dart';
 
-class LoginScreen extends StatelessWidget {
-  final Function(String, String) onLoginClicked;
-  final VoidCallback onRegisterClicked;
+import '../../../data/remote/auth_service.dart';
+import '../../../data/remote/user_service.dart';
 
-  const LoginScreen({
-    Key? key,
-    required this.onLoginClicked,
-    required this.onRegisterClicked,
-  }) : super(key: key);
+class LoginScreen extends StatelessWidget {
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final usernameController = TextEditingController();
+    final emailController = TextEditingController();
     final passwordController = TextEditingController();
-    final profileRepository = ProfileRepository(profileService: ProfileService());
+
+    // Instanciación del repositorio con sus dependencias
+    final profileRepository = ProfileRepository(
+      authService: AuthService(),
+      profileService: ProfileService(),
+      userService: UserService(),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF1E1F24),
@@ -37,7 +41,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 40),
               _buildTextField(
                 context,
-                controller: usernameController,
+                controller: emailController,
                 hintText: 'Usuario (Email)',
                 icon: Icons.email_outlined,
               ),
@@ -52,7 +56,7 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 30),
               _buildLoginButton(
                 context,
-                usernameController,
+                emailController,
                 passwordController,
                 profileRepository,
               ),
@@ -63,12 +67,9 @@ class LoginScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       PageRouteBuilder(
-                        pageBuilder: (context, animation, secondaryAnimation) => RegisterScreen(onNextClicked: () {}),
+                        pageBuilder: (context, animation, secondaryAnimation) => const RegisterScreen(),
                         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                          return FadeTransition(
-                            opacity: animation,
-                            child: child,
-                          );
+                          return FadeTransition(opacity: animation, child: child);
                         },
                       ),
                     );
@@ -100,10 +101,7 @@ class LoginScreen extends StatelessWidget {
         prefixIcon: Icon(icon, color: Colors.grey),
         filled: true,
         fillColor: const Color(0xFFFFFFFF),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
         contentPadding: const EdgeInsets.symmetric(vertical: 16),
       ),
       style: const TextStyle(color: Colors.black87),
@@ -112,33 +110,40 @@ class LoginScreen extends StatelessWidget {
 
   Widget _buildLoginButton(
       BuildContext context,
-      TextEditingController usernameController,
+      TextEditingController emailController,
       TextEditingController passwordController,
       ProfileRepository profileRepository,
       ) {
     return ElevatedButton(
       onPressed: () async {
-        if (usernameController.text.isNotEmpty && passwordController.text.isNotEmpty) {
+        if (emailController.text.isNotEmpty && passwordController.text.isNotEmpty) {
+          showDialog(context: context, builder: (context) => const Center(child: CircularProgressIndicator()), barrierDismissible: false);
           try {
-            final profile = await profileRepository.getProfileByEmailAndPassword(
-              usernameController.text,
+            final loginResult = await profileRepository.loginAndGetProfile(
+              emailController.text,
               passwordController.text,
             );
 
-            if (profile != null && profile.email == usernameController.text) {
+            Navigator.pop(context); // Cierra el dialogo de carga
+
+            if (loginResult != null) {
+              final user = loginResult.$1;
+              final profile = loginResult.$2;
+
               Widget targetScreen;
-              if (profile.type == 'Gerente') {
+              if (user.role == 'Gerente') {
                 targetScreen = ProfileScreen(
                   name: profile.name,
                   lastName: profile.lastName,
                 );
-              } else if (profile.type == 'Transportista') {
+              } else if (user.role == 'Transportista') {
                 targetScreen = ProfileScreen2(
+                  userId: profile.id,
                   name: profile.name,
                   lastName: profile.lastName,
                 );
               } else {
-                _showSnackbar(context, 'Usuario o rol no válido', Colors.red);
+                _showSnackbar(context, 'Rol de usuario no reconocido.', Colors.orange);
                 return;
               }
 
@@ -147,10 +152,7 @@ class LoginScreen extends StatelessWidget {
                 PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) => WelcomeScreen(targetScreen: targetScreen),
                   transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(
-                      opacity: animation,
-                      child: child,
-                    );
+                    return FadeTransition(opacity: animation, child: child);
                   },
                 ),
               );
@@ -159,35 +161,27 @@ class LoginScreen extends StatelessWidget {
               _showSnackbar(context, 'Usuario o contraseña incorrecta', Colors.red);
             }
           } catch (e) {
-            _showSnackbar(context, 'Error al obtener los perfiles', Colors.red);
-            print('Error al obtener perfil: $e');
+            Navigator.pop(context);
+            _showSnackbar(context, 'Error de conexión. Inténtalo de nuevo.', Colors.red);
+            print('Error en el login: $e');
           }
         } else {
-          _showSnackbar(context, 'Por favor ingrese usuario y contraseña', Colors.red);
+          _showSnackbar(context, 'Por favor ingrese usuario y contraseña', Colors.orange);
         }
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFFEA8E00),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         minimumSize: const Size(double.infinity, 50),
         padding: const EdgeInsets.symmetric(vertical: 16),
       ),
-      child: const Text(
-        'INGRESAR',
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-      ),
+      child: const Text('INGRESAR', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
     );
   }
 
   void _showSnackbar(BuildContext context, String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), backgroundColor: color, behavior: SnackBarBehavior.floating),
     );
   }
 }
