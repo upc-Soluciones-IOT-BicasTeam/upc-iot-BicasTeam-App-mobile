@@ -1,63 +1,56 @@
-// lib/features/vehicle_management/presentation/pages/login_register/register_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/user_registration_screen.dart';
+
+import 'package:movigestion_mobile/features/vehicle_management/data/remote/auth_service.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/remote/profile_service.dart';
+import 'package:movigestion_mobile/features/vehicle_management/data/remote/user_service.dart';
+import '../../../data/repository/profile_repository.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
-
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
-  String _selectedRole = '';
-  late AnimationController _animationController;
-  late Animation<double> _buttonScaleAnimation;
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
+  final ProfileRepository profileRepository = ProfileRepository(
+    authService: AuthService(),
+    profileService: ProfileService(),
+    userService: UserService(),
+  );
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.redAccent,
+      ),
     );
-    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+  }
+
+  Future<void> _handleRegister() async {
+    final success = await profileRepository.registerUserAndProfile(
+      name: nameController.text.trim(),
+      lastName: lastNameController.text.trim(),
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+      role: 'manager', // Fijo para gerentes
+      telephone: phoneController.text.trim(),
     );
-  }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _onRoleSelected(String role) {
-    setState(() {
-      _selectedRole = role;
-    });
-    _animationController.forward().then((_) => _animationController.reverse());
-  }
-
-  void _navigateToUserRegistration() {
-    if (_selectedRole.isNotEmpty) {
-      Navigator.push(
+    if (success) {
+      _showSnackbar('Registro exitoso. Ahora puedes iniciar sesión.');
+      Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (context) => UserRegistrationScreen(
-            selectedRole: _selectedRole,
-          ),
-        ),
+        MaterialPageRoute(builder: (context) => LoginScreen()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor selecciona un rol'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      _showSnackbar('Error al registrarse.');
     }
   }
 
@@ -65,79 +58,46 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1E1F24),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(32.0),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Image.asset(
-                'assets/images/login_logo.png',
-                height: 120,
-              ),
+              Image.asset('assets/images/login_logo.png', height: 100),
               const SizedBox(height: 40),
-              const Text(
-                'Selecciona tu rol',
-                style: TextStyle(color: Colors.amber, fontSize: 24, fontWeight: FontWeight.bold),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Nombre', filled: true, fillColor: Colors.white),
               ),
-              const SizedBox(height: 30),
-              _buildRoleButton('Gerente'),
               const SizedBox(height: 16),
-              _buildRoleButton('Transportista'),
-              const SizedBox(height: 30),
+              TextField(
+                controller: lastNameController,
+                decoration: const InputDecoration(labelText: 'Apellido', filled: true, fillColor: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email', filled: true, fillColor: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Contraseña', filled: true, fillColor: Colors.white),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(labelText: 'Teléfono', filled: true, fillColor: Colors.white),
+              ),
+              const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _navigateToUserRegistration,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFA000),
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-                child: const Text(
-                  'SIGUIENTE',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                onPressed: _handleRegister,
+                child: const Text('Registrarse'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA8E00)),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRoleButton(String role) {
-    return ScaleTransition(
-      scale: _selectedRole == role ? _buttonScaleAnimation : const AlwaysStoppedAnimation(1.0),
-      child: ElevatedButton(
-        onPressed: () => _onRoleSelected(role),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _selectedRole == role ? Colors.orangeAccent : const Color(0xFF2F353F),
-          foregroundColor: Colors.white,
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          shadowColor: _selectedRole == role ? Colors.orange : Colors.transparent,
-          elevation: _selectedRole == role ? 8 : 2,
-        ),
-        child: Text(
-          role.toUpperCase(),
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: _selectedRole == role ? Colors.black : Colors.white70,
           ),
         ),
       ),
