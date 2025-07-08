@@ -10,6 +10,7 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/reports/reports_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/carrier_profiles/carrier_profiles.dart';
+import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/analytics/analytics_screen.dart';
 
 // ✅ Validación de base64
 bool isValidBase64(String str) {
@@ -178,11 +179,13 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.people, 'TRANSPORTISTAS', CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHICULOS', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PROFILE', ProfileScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.people, 'CARRIERS', CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTS', ReportsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'VEHICLES', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.local_shipping, 'SHIPMENTS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.analytics, 'ANALYTICS', AnalyticsScreen(name: widget.name, lastName: widget.lastName)),
+
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),

@@ -9,6 +9,7 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/shipment_model.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/carrier_profiles/carrier_profiles.dart';
+import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/analytics/analytics_screen.dart';
 
 class ShipmentsScreen extends StatefulWidget {
   final String name;
@@ -311,12 +312,14 @@ class _ShipmentsScreenState extends State<ShipmentsScreen> {
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.people, 'TRANSPORTISTAS',
+          _buildDrawerItem(Icons.person, 'PROFILE', ProfileScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.people, 'CARRIERS',
               CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES', ReportsScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHÍCULOS', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTS', ReportsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'VEHICLES', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.local_shipping, 'SHIPMENTS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.analytics, 'ANALYTICS', AnalyticsScreen(name: widget.name, lastName: widget.lastName)),
+
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
