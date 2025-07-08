@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_model.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/repository/vehicle_repository.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_service.dart';
@@ -40,6 +41,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   final VehicleRepository vehicleRepository =
       VehicleRepository(vehicleService: VehicleService());
 
+  GoogleMapController? _mapController;
+  LatLng? _vehicleLocation;
+
   @override
   void initState() {
     super.initState();
@@ -49,8 +53,47 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     lastTechnicalInspectionDateController = TextEditingController(
       text: DateFormat('yyyy-MM-dd').format(widget.vehicle.lastTechnicalInspectionDate),
     );
+
+    _parseLocation(widget.vehicle.location);
   }
 
+  void _parseLocation(String locationString) {
+    final latRegex = RegExp(r"Latitude: (-?\d+\.\d+)");
+    final lonRegex = RegExp(r"Longitude: (-?\d+\.\d+)");
+
+    final latMatch = latRegex.firstMatch(locationString);
+    final lonMatch = lonRegex.firstMatch(locationString);
+
+    // Si encontramos ambos valores...
+    if (latMatch != null && lonMatch != null) {
+      final latString = latMatch.group(1);
+      final lonString = lonMatch.group(1);
+
+      if (latString != null && lonString != null) {
+        final lat = double.tryParse(latString);
+        final lon = double.tryParse(lonString);
+
+        if (lat != null && lon != null) {
+          setState(() {
+            _vehicleLocation = LatLng(lat, lon);
+          });
+        }
+      }
+    } else {
+       // Si el formato es "lat,lon" (como respaldo)
+      final locationParts = locationString.split(',');
+      if (locationParts.length == 2) {
+        final lat = double.tryParse(locationParts[0].trim());
+        final lon = double.tryParse(locationParts[1].trim());
+        if (lat != null && lon != null) {
+          setState(() {
+             _vehicleLocation = LatLng(lat, lon);
+          });
+        }
+      }
+    }
+  }
+  
   Future<void> _pickImage() async {
     final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -101,7 +144,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         updatedVehicle,
       );
 
-      if (success) {
+      if (success && mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -156,6 +199,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   }
 
   void _showSnackbar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: const TextStyle(color: Colors.white)),
@@ -169,12 +213,50 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
     return base64Encode(imageBytes);
   }
 
+  Widget _buildMap() {
+    if (_vehicleLocation == null) {
+      return const Center(
+        child: Text(
+          "Ubicación no disponible para mostrar en el mapa.",
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+    
+    return SizedBox(
+      height: 200,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(15),
+        child: GoogleMap(
+          initialCameraPosition: CameraPosition(
+            target: _vehicleLocation!,
+            zoom: 15,
+          ),
+          markers: {
+            Marker(
+              markerId: MarkerId(widget.vehicle.id.toString()),
+              position: _vehicleLocation!,
+              infoWindow: InfoWindow(
+                title: 'Ubicación Actual',
+                snippet: widget.vehicle.licensePlate,
+              ),
+            ),
+          },
+          onMapCreated: (controller) => _mapController = controller,
+          myLocationEnabled: false,
+          zoomControlsEnabled: true,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2C2F38),
         title: const Text('Detalle del Vehículo', style: TextStyle(color: Colors.grey)),
+        iconTheme: const IconThemeData(color: Colors.grey),
       ),
       backgroundColor: const Color(0xFF1E1F24),
       drawer: _buildDrawer(),
@@ -198,14 +280,19 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
             _buildSectionContainer(_buildTextField('Color', colorController)),
             _buildSectionContainer(_buildDateField('Última Inspección Técnica', lastTechnicalInspectionDateController)),
             _buildSectionContainer(_buildSensorData()),
-            const SizedBox(height: 20),
+
+            // ***** EL MAPA SE MUESTRA AQUÍ *****
+            _buildSectionContainer(_buildMap()),
+            const SizedBox(height: 4),
+
             ElevatedButton(
               onPressed: _updateVehicle,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFEA8E00),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              child: const Text('Guardar cambios', style: TextStyle(color: Colors.black)),
+              child: const Text('Guardar cambios', style: TextStyle(color: Colors.black, fontSize: 16)),
             ),
             const SizedBox(height: 10),
             ElevatedButton(
@@ -213,8 +300,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.redAccent,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
+                padding: const EdgeInsets.symmetric(vertical: 15),
               ),
-              child: const Text('Eliminar Vehículo', style: TextStyle(color: Colors.white)),
+              child: const Text('Eliminar Vehículo', style: TextStyle(color: Colors.white, fontSize: 16)),
             ),
           ],
         ),
@@ -235,10 +323,17 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
         ),
         style: const TextStyle(color: Colors.white),
         onTap: () async {
+          DateTime initial;
+          try {
+            initial = DateFormat('yyyy-MM-dd').parse(controller.text);
+          } catch (e) {
+            initial = DateTime.now();
+          }
+
           DateTime? pickedDate = await showDatePicker(
             context: context,
-            initialDate: widget.vehicle.lastTechnicalInspectionDate,
-            firstDate: widget.vehicle.lastTechnicalInspectionDate,
+            initialDate: initial,
+            firstDate: DateTime(2000),
             lastDate: DateTime.now(),
             builder: (context, child) => Theme(
               data: ThemeData.dark().copyWith(
@@ -248,6 +343,7 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                   surface: Color(0xFF2C2F38),
                   onSurface: Colors.white,
                 ),
+                dialogBackgroundColor: const Color(0xFF2C2F38),
               ),
               child: child!,
             ),
@@ -265,7 +361,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
 
   Widget _buildVehicleNetworkImage(String imageUrl) => ClipRRect(
         borderRadius: BorderRadius.circular(15),
-        child: Image.network(imageUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
+        child: Image.network(
+          imageUrl, 
+          height: 200, 
+          width: double.infinity, 
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildNoImagePlaceholder(),
+        ),
       );
 
   Widget _buildNoImagePlaceholder() => Container(
@@ -275,7 +377,14 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           borderRadius: BorderRadius.circular(15),
         ),
         child: const Center(
-          child: Text('Toca para seleccionar imagen', style: TextStyle(color: Colors.white70)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.camera_alt, color: Colors.white70, size: 40),
+              SizedBox(height: 8),
+              Text('Toca para seleccionar imagen', style: TextStyle(color: Colors.white70)),
+            ],
+          ),
         ),
       );
 
@@ -338,12 +447,20 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 style: const TextStyle(color: Colors.white)),
           ]),
           const SizedBox(height: 8),
-          Row(children: [
-            const Icon(Icons.location_on, color: Colors.greenAccent),
-            const SizedBox(width: 8),
-            Text('Ubicación: ${widget.vehicle.location}',
-                style: const TextStyle(color: Colors.white)),
-          ]),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.location_on, color: Colors.greenAccent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Ubicación: ${widget.vehicle.location}',
+                  style: const TextStyle(color: Colors.white),
+                  softWrap: true,
+                ),
+              ),
+            ],
+          ),
         ],
       );
 
@@ -353,12 +470,17 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
+              decoration: const BoxDecoration(
+                color: Color(0xFF1E1F24),
+              ),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/images/login_logo.png', height: 100),
+                  Image.asset('assets/images/login_logo.png', height: 80),
                   const SizedBox(height: 10),
-                  Text('${widget.name} ${widget.lastName} - Gerente',
-                      style: const TextStyle(color: Colors.grey)),
+                  Text('${widget.name} ${widget.lastName}',
+                      style: const TextStyle(color: Colors.white, fontSize: 16)),
+                  const Text('Gerente', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
             ),
@@ -372,16 +494,13 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
                 VehiclesScreen(name: widget.name, lastName: widget.lastName)),
             _buildDrawerItem(Icons.local_shipping, 'ENVIOS',
                 ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
-            const SizedBox(height: 160),
-            ListTile(
+            const Spacer(),
+             ListTile(
               leading: const Icon(Icons.logout, color: Colors.white),
               title: const Text('CERRAR SESIÓN', style: TextStyle(color: Colors.white)),
               onTap: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => LoginScreen(),
-                  ),
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
                   (_) => false,
                 );
               },
@@ -393,6 +512,9 @@ class _VehicleDetailScreenState extends State<VehicleDetailScreen> {
   Widget _buildDrawerItem(IconData icon, String title, Widget page) => ListTile(
         leading: Icon(icon, color: Colors.white),
         title: Text(title, style: const TextStyle(color: Colors.white)),
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => page));
+        }
       );
 }
