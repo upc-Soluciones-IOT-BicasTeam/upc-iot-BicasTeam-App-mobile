@@ -1,75 +1,69 @@
 class VehicleModel {
   final int id;
-  final int managerId;
+  final int userId;
   final String licensePlate;
-  final String brand;
   final String model;
-  final double temperature;
-  final double humidity;
-  final double maxLoad;
-  final int driverId;
-  final String vehicleImage;
+  final int engine;
+  final int fuel;
+  final int tires;
+  final int electricalSystem;
+  final int transmissionTemperature;
+  final String driverName;
+  final String vehicleImage; // Codificación base64
   final String color;
   final DateTime lastTechnicalInspectionDate;
-  final String location;
-  final String speed;
   final DateTime createdAt;
 
   VehicleModel({
     required this.id,
-    required this.managerId,
+    required this.userId,
     required this.licensePlate,
-    required this.brand,
     required this.model,
-    required this.temperature,
-    required this.humidity,
-    required this.maxLoad,
-    required this.driverId,
+    required this.engine,
+    required this.fuel,
+    required this.tires,
+    required this.electricalSystem,
+    required this.transmissionTemperature,
+    required this.driverName,
     required this.vehicleImage,
     required this.color,
     required this.lastTechnicalInspectionDate,
-    required this.location,
-    required this.speed,
     required this.createdAt,
   });
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     return VehicleModel(
-      id: json['id'] ?? 0,
-      managerId: json['managerId'] ?? 0,
-      licensePlate: json['licensePlate'] ?? '',
-      brand: json['brand'] ?? '',
-      model: json['model'] ?? '',
-      temperature: (json['temperature'] as num?)?.toDouble() ?? 0.0,
-      humidity: (json['humidity'] as num?)?.toDouble() ?? 0.0,
-      maxLoad: (json['maxLoad'] as num?)?.toDouble() ?? 0.0,
-      driverId: json['driverId'] ?? 0,
-      vehicleImage: json['vehicleImage'] ?? '',
-      color: json['color'] ?? '',
-      lastTechnicalInspectionDate: DateTime.tryParse(json['lastTechnicalInspectionDate'] ?? '') ?? DateTime.now(),
-      location: json['location'] ?? '',
-      speed: json['speed'] ?? '',
-      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+      id: json['id'],
+      userId: json['userId'],
+      licensePlate: json['licensePlate'],
+      model: json['model'],
+      engine: json['engine'],
+      fuel: json['fuel'],
+      tires: json['tires'],
+      electricalSystem: json['electricalSystem'],
+      transmissionTemperature: json['transmissionTemperature'],
+      driverName: json['driverName'],
+      vehicleImage: json['vehicleImage'],
+      color: json['color'],
+      lastTechnicalInspectionDate: DateTime.parse(json['lastTechnicalInspectionDate']),
+      createdAt: DateTime.parse(json['createdAt']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'idManager': managerId,
       'licensePlate': licensePlate,
-      'brand': brand,
       'model': model,
-      'temperature': temperature,
-      'humidity': humidity,
-      'maxLoad': maxLoad,
-      'driverId': driverId,
+      'engine': engine,
+      'fuel': fuel,
+      'tires': tires,
+      'electricalSystem': electricalSystem,
+      'transmissionTemperature': transmissionTemperature,
+      'driverName': driverName,
       'vehicleImage': vehicleImage,
       'color': color,
       'lastTechnicalInspectionDate': lastTechnicalInspectionDate.toIso8601String(),
-      'latitude': 0,
-      'longitude': 0,
-      'altitude': 0,
-      'speed': 0,
     };
   }
+
 }
