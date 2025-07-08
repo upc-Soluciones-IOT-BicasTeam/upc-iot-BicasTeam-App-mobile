@@ -1,8 +1,10 @@
-import 'dart:convert'; 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_model.dart';
-import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_service.dart'; 
+import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_service.dart';
+
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/profile/profile_screen2.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/reports/reports_carrier_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/shipments/shipments_screen2.dart';
@@ -21,14 +23,18 @@ class VehicleDetailCarrierScreenScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _VehicleDetailCarrierScreenScreenState createState() => _VehicleDetailCarrierScreenScreenState();
+  _VehicleDetailCarrierScreenScreenState createState() =>
+      _VehicleDetailCarrierScreenScreenState();
 }
 
-class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierScreenScreen> with SingleTickerProviderStateMixin {
-  List<VehicleModel> vehicles = []; // Ahora es una lista de VehicleModel
+class _VehicleDetailCarrierScreenScreenState
+    extends State<VehicleDetailCarrierScreenScreen>
+    with SingleTickerProviderStateMixin {
+  List<VehicleModel> vehicles = [];
   bool isLoading = true;
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
 
   final VehicleService _vehicleService = VehicleService();
 
@@ -43,27 +49,23 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    _fetchAllVehicles(); // Llama a la función para obtener todos los vehículos
+    _fetchAllVehicles();
   }
 
   Future<void> _fetchAllVehicles() async {
-    setState(() {
-      isLoading = true; // Inicia la carga
-    });
+    setState(() => isLoading = true);
     try {
-      final List<VehicleModel> fetchedVehicles = await _vehicleService.getAllVehicles();
-
+      final fetchedVehicles = await _vehicleService.getAllVehicles();
       setState(() {
-        vehicles = fetchedVehicles; // Asigna la lista completa de vehículos
+        vehicles = fetchedVehicles;
         isLoading = false;
       });
-      // Inicia la animación una vez que los datos han sido cargados
       _animationController.forward();
     } catch (e) {
-      print('Error fetching vehicles: $e');
+      debugPrint('Error fetching vehicles: $e');
       setState(() {
         isLoading = false;
-        vehicles = []; // En caso de error, la lista estará vacía
+        vehicles = [];
       });
     }
   }
@@ -79,14 +81,12 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF2C2F38),
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.directions_car, color: Colors.amber),
-            const SizedBox(width: 10),
-            Text(
-              'Todos los Vehículos', // Título actualizado
-              style: TextStyle(color: Colors.grey, fontSize: 22, fontWeight: FontWeight.w600),
-            ),
+            Icon(Icons.directions_car, color: Colors.amber),
+            SizedBox(width: 10),
+            Text('Todos los Vehículos',
+                style: TextStyle(color: Colors.grey, fontSize: 22, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -94,32 +94,32 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
       drawer: _buildDrawer(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-          : vehicles.isNotEmpty // Verifica si la lista de vehículos no está vacía
+          : vehicles.isNotEmpty
               ? FadeTransition(
                   opacity: _fadeAnimation,
-                  child: ListView.builder( // ¡Usamos ListView.builder para mostrar la lista!
+                  child: ListView.builder(
                     padding: const EdgeInsets.all(16.0),
                     itemCount: vehicles.length,
-                    itemBuilder: (context, index) {
-                      final vehicle = vehicles[index];
-                      return _buildVehicleCard(vehicle); // Un nuevo método para construir cada tarjeta
-                    },
+                    itemBuilder: (context, index) =>
+                        _buildVehicleCard(vehicles[index]),
                   ),
                 )
               : const Center(
                   child: Text(
                     'No se encontraron vehículos disponibles.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600),
                   ),
                 ),
     );
   }
 
-  // --- Nuevo método para construir la tarjeta de cada vehículo ---
   Widget _buildVehicleCard(VehicleModel vehicle) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20), // Espacio entre tarjetas
+      margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2F353F),
@@ -140,82 +140,21 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
           _buildInfoRow('Placa', vehicle.licensePlate),
           _buildInfoRow('Marca', vehicle.brand),
           _buildInfoRow('Modelo', vehicle.model),
-          _buildInfoRow('Temperatura', '${vehicle.temperature}°C', isPercentage: true),
-          _buildInfoRow('Humedad', '${vehicle.humidity}%', isPercentage: true),
-          _buildInfoRow('Carga Máxima', '${vehicle.maxLoad} kg', isPercentage: true),
+          _buildInfoRow('Temperatura', '${vehicle.temperature}°C',
+              isPercentage: true),
+          _buildInfoRow('Humedad', '${vehicle.humidity}%',
+              isPercentage: true),
+          _buildInfoRow('Carga Máxima', '${vehicle.maxLoad} kg',
+              isPercentage: true),
           _buildInfoRow('Color', vehicle.color),
-          _buildInfoRow('Fecha de Última Inspección',
-              DateFormat('yyyy-MM-dd HH:mm').format(vehicle.lastTechnicalInspectionDate)),
+          _buildInfoRow(
+              'Fecha de Última Inspección',
+              DateFormat('yyyy-MM-dd HH:mm')
+                  .format(vehicle.lastTechnicalInspectionDate)),
           _buildInfoRow('Ubicación', vehicle.location),
           _buildInfoRow('Velocidad', vehicle.speed),
-          _buildInfoRow('Registrado Desde', DateFormat('yyyy-MM-dd HH:mm').format(vehicle.createdAt)),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildInfoRow(String label, String value, {bool isPercentage = false}) {
-    String getConditionText(double percentage) {
-      if (percentage > 75) {
-        return "En excelente estado";
-      } else if (percentage > 60) {
-        return "En buen estado";
-      } else if (percentage > 35) {
-        return "Presenta algunas fallas";
-      } else {
-        return "En mal estado";
-      }
-    }
-
-    Color getConditionColor(double percentage) {
-      if (percentage > 75) {
-        return Colors.green;
-      } else if (percentage > 60) {
-        return Colors.amber;
-      } else if (percentage > 35) {
-        return Colors.orange;
-      } else {
-        return Colors.red;
-      }
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0), // Pequeño padding vertical
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(color: Colors.amber, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                ),
-                if (isPercentage)
-                  Text(
-                    getConditionText(double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: getConditionColor(double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          _buildInfoRow('Registrado Desde',
+              DateFormat('yyyy-MM-dd HH:mm').format(vehicle.createdAt)),
         ],
       ),
     );
@@ -223,122 +162,191 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
 
   Widget _buildVehicleImage(String imageUrl) {
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.network(
-          imageUrl,
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildNoImagePlaceholder();
-          },
-        ),
-      );
+      return _networkOrPlaceholder(imageUrl);
     } else if (imageUrl.isNotEmpty) {
       try {
-        final decodedBytes = base64Decode(imageUrl);
+        final bytes = base64Decode(imageUrl);
         return ClipRRect(
           borderRadius: BorderRadius.circular(15),
           child: Image.memory(
-            decodedBytes,
+            bytes,
             height: 200,
             width: double.infinity,
             fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildNoImagePlaceholder();
-            },
+            errorBuilder: (_, __, ___) => _buildNoImagePlaceholder(),
           ),
         );
       } catch (e) {
-        print('Error decoding base64 image: $e');
-        return _buildNoImagePlaceholder();
+        debugPrint('Error decoding base64 image: $e');
       }
     }
     return _buildNoImagePlaceholder();
   }
 
-  Widget _buildNoImagePlaceholder() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: const Color(0xFF3A414B),
+  Widget _networkOrPlaceholder(String url) => ClipRRect(
         borderRadius: BorderRadius.circular(15),
-      ),
-      child: const Center(
-        child: Text(
-          'No hay imagen disponible',
-          style: TextStyle(color: Colors.white70, fontSize: 16),
+        child: Image.network(
+          url,
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildNoImagePlaceholder(),
         ),
-      ),
-    );
-  }
+      );
 
-  Widget _buildDrawer() {
-    return Drawer(
-      backgroundColor: const Color(0xFF2C2F38),
-      child: ListView(
-        padding: EdgeInsets.zero,
+  Widget _buildNoImagePlaceholder() => Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: const Color(0xFF3A414B),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        alignment: Alignment.center,
+        child: const Text('No hay imagen disponible',
+            style: TextStyle(color: Colors.white70, fontSize: 16)),
+      );
+
+  Widget _buildInfoRow(String label, String value,
+      {bool isPercentage = false}) {
+    double? percentageValue;
+    if (isPercentage) {
+      percentageValue =
+          double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), ''));
+    }
+
+    String conditionText(double p) {
+      if (p > 75) return 'En excelente estado';
+      if (p > 60) return 'En buen estado';
+      if (p > 35) return 'Presenta algunas fallas';
+      return 'En mal estado';
+    }
+
+    Color conditionColor(double p) {
+      if (p > 75) return Colors.green;
+      if (p > 60) return Colors.amber;
+      if (p > 35) return Colors.orange;
+      return Colors.red;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          DrawerHeader(
+          Expanded(
+            flex: 2,
+            child: Text(label,
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 3,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Image.asset(
-                  'assets/images/login_logo.png',
-                  height: 100,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  '${widget.name} ${widget.lastName} - Transportista',
-                  style: const TextStyle(color: Colors.grey, fontSize: 16),
-                ),
+                Text(value,
+                    style: const TextStyle(color: Colors.amber, fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end),
+                if (isPercentage && percentageValue != null)
+                  Text(
+                    conditionText(percentageValue),
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: conditionColor(percentageValue)),
+                  ),
               ],
             ),
-          ),
-          _buildDrawerItem(
-              Icons.person, 'PERFIL', ProfileScreen2(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES',
-              ReportsCarrierScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(
-              Icons.directions_car,
-              'VEHÍCULOS',
-              VehicleDetailCarrierScreenScreen(
-                name: widget.name,
-                lastName: widget.lastName,
-              )),
-          _buildDrawerItem(Icons.local_shipping, 'ENVÍOS',
-              ShipmentsScreen2(name: widget.name, lastName: widget.lastName)),
-          const SizedBox(height: 160),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.white),
-            title: const Text('CERRAR SESIÓN', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LoginScreen(
-
-                  ),
-                ),
-                (Route<dynamic> route) => false,
-              );
-            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String title, Widget page) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
-      onTap: () {
-        Navigator.push(
+  Widget _buildDrawer() => Drawer(
+        backgroundColor: const Color(0xFF2C2F38),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              child: Column(
+                children: [
+                  Image.asset('assets/images/login_logo.png', height: 100),
+                  const SizedBox(height: 10),
+                  Text(
+                    '${widget.name} ${widget.lastName} - Transportista',
+                    style:
+                        const TextStyle(color: Colors.grey, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+            _buildDrawerItem(
+              Icons.person,
+              'PERFIL',
+              ProfileScreen2(
+                userId: widget.userId,
+                name: widget.name,
+                lastName: widget.lastName,
+              ),
+            ),
+            _buildDrawerItem(
+              Icons.report,
+              'REPORTES',
+              ReportsCarrierScreen(
+                userId: widget.userId,
+                name: widget.name,
+                lastName: widget.lastName,
+              ),
+            ),
+            _buildDrawerItem(
+              Icons.directions_car,
+              'VEHÍCULOS',
+              VehicleDetailCarrierScreenScreen(
+                userId: widget.userId,
+                name: widget.name,
+                lastName: widget.lastName,
+              ),
+            ),
+            _buildDrawerItem(
+              Icons.local_shipping,
+              'ENVÍOS',
+              ShipmentsScreen2(
+                userId: widget.userId,
+                name: widget.name,
+                lastName: widget.lastName,
+              ),
+            ),
+            const SizedBox(height: 160),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text('CERRAR SESIÓN',
+                  style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const LoginScreen(),
+                  ),
+                  (_) => false,
+                );
+              },
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildDrawerItem(IconData icon, String title, Widget page) =>
+      ListTile(
+        leading: Icon(icon, color: Colors.white),
+        title: Text(title,
+            style: const TextStyle(color: Colors.white)),
+        onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => page),
-        );
-      },
-    );
-  }
+          MaterialPageRoute(builder: (_) => page),
+        ),
+      );
 }

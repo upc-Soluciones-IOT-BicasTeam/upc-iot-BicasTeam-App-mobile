@@ -224,7 +224,9 @@ class _AssignVehicleScreenState extends State<AssignVehicleScreen> {
             onTap: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => LoginScreen(onLoginClicked: (_, __) {}, onRegisterClicked: () {})),
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
                 (route) => false,
 
               );

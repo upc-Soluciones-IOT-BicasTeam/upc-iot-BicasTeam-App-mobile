@@ -191,10 +191,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LoginScreen(
-                    onLoginClicked: (u, p) => print('Login $u $p'),
-                    onRegisterClicked: () => print('Registro'),
-                  ),
+                  builder: (_) => LoginScreen(),
                 ),
                 (_) => false,
               );
