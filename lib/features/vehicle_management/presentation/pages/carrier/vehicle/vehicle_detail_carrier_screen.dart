@@ -1,12 +1,13 @@
-import 'dart:convert'; 
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_model.dart';
-import 'package:movigestion_mobile/features/vehicle_management/data/remote/vehicle_service.dart'; 
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/profile/profile_screen2.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/reports/reports_carrier_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/carrier/shipments/shipments_screen2.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/login_register/login_screen.dart';
+
 
 class VehicleDetailCarrierScreenScreen extends StatefulWidget {
   final int userId;
@@ -25,12 +26,10 @@ class VehicleDetailCarrierScreenScreen extends StatefulWidget {
 }
 
 class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierScreenScreen> with SingleTickerProviderStateMixin {
-  List<VehicleModel> vehicles = []; // Ahora es una lista de VehicleModel
+  VehicleModel? vehicle;
   bool isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  final VehicleService _vehicleService = VehicleService();
 
   @override
   void initState() {
@@ -43,27 +42,43 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
       parent: _animationController,
       curve: Curves.easeInOut,
     );
-    _fetchAllVehicles(); // Llama a la función para obtener todos los vehículos
+    _fetchVehicleByDriverName(widget.name);
   }
 
-  Future<void> _fetchAllVehicles() async {
-    setState(() {
-      isLoading = true; // Inicia la carga
-    });
+  Future<void> _fetchVehicleByDriverName(String driverName) async {
+    final url = Uri.parse('https://app-241107014459.azurewebsites.net/api/vehicles');
     try {
-      final List<VehicleModel> fetchedVehicles = await _vehicleService.getAllVehicles();
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        VehicleModel? foundVehicle = data
+            .map((json) => VehicleModel.fromJson(json))
+            .cast<VehicleModel?>()
+            .firstWhere(
+              (vehicle) => vehicle?.driverName == driverName,
+          orElse: () => null,
+        );
 
-      setState(() {
-        vehicles = fetchedVehicles; // Asigna la lista completa de vehículos
-        isLoading = false;
-      });
-      // Inicia la animación una vez que los datos han sido cargados
-      _animationController.forward();
+        if (foundVehicle != null) {
+          setState(() {
+            vehicle = foundVehicle;
+            isLoading = false;
+          });
+          _animationController.forward();
+        } else {
+          setState(() {
+            vehicle = null;
+            isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
     } catch (e) {
-      print('Error fetching vehicles: $e');
       setState(() {
         isLoading = false;
-        vehicles = []; // En caso de error, la lista estará vacía
       });
     }
   }
@@ -81,45 +96,59 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
         backgroundColor: const Color(0xFF2C2F38),
         title: Row(
           children: [
-            const Icon(Icons.directions_car, color: Colors.amber),
+            Icon(Icons.directions_car, color: Colors.amber),
             const SizedBox(width: 10),
             Text(
-              'Todos los Vehículos', // Título actualizado
+              'Vehiculo Asignado',
               style: TextStyle(color: Colors.grey, fontSize: 22, fontWeight: FontWeight.w600),
             ),
           ],
         ),
       ),
+
       backgroundColor: const Color(0xFF1A1F24),
       drawer: _buildDrawer(),
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-          : vehicles.isNotEmpty // Verifica si la lista de vehículos no está vacía
-              ? FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ListView.builder( // ¡Usamos ListView.builder para mostrar la lista!
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: vehicles.length,
-                    itemBuilder: (context, index) {
-                      final vehicle = vehicles[index];
-                      return _buildVehicleCard(vehicle); // Un nuevo método para construir cada tarjeta
-                    },
-                  ),
-                )
-              : const Center(
-                  child: Text(
-                    'No se encontraron vehículos disponibles.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ),
+          : vehicle != null
+          ? FadeTransition(
+        opacity: _fadeAnimation,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionContainer(_buildVehicleImage(vehicle!.vehicleImage)),
+              const SizedBox(height: 20),
+              _buildSectionContainer(_buildInfoRow('Placa', vehicle!.licensePlate)),
+              _buildSectionContainer(_buildInfoRow('Modelo', vehicle!.model)),
+              _buildSectionContainer(_buildInfoRow('Motor (%)', '${vehicle!.engine}%', isPercentage: true)),
+              _buildSectionContainer(_buildInfoRow('Combustible (%)', '${vehicle!.fuel}%', isPercentage: true)),
+              _buildSectionContainer(_buildInfoRow('Neumáticos (%)', '${vehicle!.tires}%', isPercentage: true)),
+              _buildSectionContainer(_buildInfoRow('Sistema Eléctrico (%)', '${vehicle!.electricalSystem}%', isPercentage: true)),
+              _buildSectionContainer(_buildInfoRow('Temperatura de Transmisión (%)', '${vehicle!.transmissionTemperature}%', isPercentage: true)),
+
+              _buildSectionContainer(_buildInfoRow('Conductor', vehicle!.driverName)),
+              _buildSectionContainer(_buildInfoRow('Color', vehicle!.color)),
+              _buildSectionContainer(
+                _buildInfoRow('Fecha de Última Inspección', DateFormat('yyyy-MM-dd').format(vehicle!.lastTechnicalInspectionDate)),
+              ),
+            ],
+          ),
+        ),
+      )
+          :  const Center(
+        child: Text(
+          'No te asignaron un vehiculo',
+          style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+      )
     );
   }
 
-  // --- Nuevo método para construir la tarjeta de cada vehículo ---
-  Widget _buildVehicleCard(VehicleModel vehicle) {
+  Widget _buildSectionContainer(Widget child) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20), // Espacio entre tarjetas
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF2F353F),
@@ -132,28 +161,9 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildVehicleImage(vehicle.vehicleImage),
-          const SizedBox(height: 15),
-          _buildInfoRow('Placa', vehicle.licensePlate),
-          _buildInfoRow('Marca', vehicle.brand),
-          _buildInfoRow('Modelo', vehicle.model),
-          _buildInfoRow('Temperatura', '${vehicle.temperature}°C', isPercentage: true),
-          _buildInfoRow('Humedad', '${vehicle.humidity}%', isPercentage: true),
-          _buildInfoRow('Carga Máxima', '${vehicle.maxLoad} kg', isPercentage: true),
-          _buildInfoRow('Color', vehicle.color),
-          _buildInfoRow('Fecha de Última Inspección',
-              DateFormat('yyyy-MM-dd HH:mm').format(vehicle.lastTechnicalInspectionDate)),
-          _buildInfoRow('Ubicación', vehicle.location),
-          _buildInfoRow('Velocidad', vehicle.speed),
-          _buildInfoRow('Registrado Desde', DateFormat('yyyy-MM-dd HH:mm').format(vehicle.createdAt)),
-        ],
-      ),
+      child: child,
     );
   }
-
 
   Widget _buildInfoRow(String label, String value, {bool isPercentage = false}) {
     String getConditionText(double percentage) {
@@ -180,82 +190,61 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0), // Pequeño padding vertical
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
-              overflow: TextOverflow.ellipsis,
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: const TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600),
+            overflow: TextOverflow.ellipsis,
           ),
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
+        ),
+        Expanded(
+          flex: 3,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(color: Colors.amber, fontSize: 16),
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+              ),
+              if (isPercentage)
                 Text(
-                  value,
-                  style: const TextStyle(color: Colors.amber, fontSize: 16),
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.end,
-                ),
-                if (isPercentage)
-                  Text(
-                    getConditionText(double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: getConditionColor(double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0),
-                    ),
+                  getConditionText(double.tryParse(value.replaceAll('%', '')) ?? 0),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: getConditionColor(double.tryParse(value.replaceAll('%', '')) ?? 0),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
+
+
   Widget _buildVehicleImage(String imageUrl) {
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(15),
-        child: Image.network(
-          imageUrl,
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildNoImagePlaceholder();
-          },
-        ),
-      );
-    } else if (imageUrl.isNotEmpty) {
-      try {
-        final decodedBytes = base64Decode(imageUrl);
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(15),
-          child: Image.memory(
-            decodedBytes,
-            height: 200,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildNoImagePlaceholder();
-            },
-          ),
-        );
-      } catch (e) {
-        print('Error decoding base64 image: $e');
-        return _buildNoImagePlaceholder();
-      }
-    }
-    return _buildNoImagePlaceholder();
+    return imageUrl.isNotEmpty
+        ? ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: Image.network(
+        imageUrl,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildNoImagePlaceholder();
+        },
+      ),
+    )
+        : _buildNoImagePlaceholder();
   }
 
   Widget _buildNoImagePlaceholder() {
@@ -281,6 +270,7 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
+
             child: Column(
               children: [
                 Image.asset(
@@ -290,24 +280,15 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
                 const SizedBox(height: 10),
                 Text(
                   '${widget.name} ${widget.lastName} - Transportista',
-                  style: const TextStyle(color: Colors.grey, fontSize: 16),
+                  style: const TextStyle(color: Colors.grey,  fontSize: 16),
                 ),
               ],
             ),
           ),
-          _buildDrawerItem(
-              Icons.person, 'PERFIL', ProfileScreen2(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTES',
-              ReportsCarrierScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(
-              Icons.directions_car,
-              'VEHÍCULOS',
-              VehicleDetailCarrierScreenScreen(
-                name: widget.name,
-                lastName: widget.lastName,
-              )),
-          _buildDrawerItem(Icons.local_shipping, 'ENVÍOS',
-              ShipmentsScreen2(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PERFIL', ProfileScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.report, 'REPORTES', ReportsCarrierScreen(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.directions_car, 'VEHICULOS',this.widget),
+          _buildDrawerItem(Icons.local_shipping, 'ENVIOS', ShipmentsScreen2(userId: widget.userId, name: widget.name, lastName: widget.lastName)),
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
@@ -320,7 +301,7 @@ class _VehicleDetailCarrierScreenScreenState extends State<VehicleDetailCarrierS
 
                   ),
                 ),
-                (Route<dynamic> route) => false,
+                    (Route<dynamic> route) => false,
               );
             },
           ),
