@@ -219,10 +219,7 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Email: ${_selectedDriver!.email}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
+                
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -274,27 +271,6 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
       );
     }
 
-    // Calcular promedios de los sistemas de los vehículos
-    int totalEngine = 0;
-    int totalFuel = 0;
-    int totalTires = 0;
-    int totalElectricalSystem = 0;
-    int totalTransmissionTemp = 0;
-
-    for (var vehicle in _selectedDriverVehicles) {
-      totalEngine += vehicle.engine;
-      totalFuel += vehicle.fuel;
-      totalTires += vehicle.tires;
-      totalElectricalSystem += vehicle.electricalSystem;
-      totalTransmissionTemp += vehicle.transmissionTemperature;
-    }
-
-    double avgEngine = totalEngine / _selectedDriverVehicles.length;
-    double avgFuel = totalFuel / _selectedDriverVehicles.length;
-    double avgTires = totalTires / _selectedDriverVehicles.length;
-    double avgElectricalSystem = totalElectricalSystem / _selectedDriverVehicles.length;
-    double avgTransmissionTemp = totalTransmissionTemp / _selectedDriverVehicles.length;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -312,12 +288,6 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          _buildSystemProgressBar('Motor', avgEngine),
-          _buildSystemProgressBar('Combustible', avgFuel),
-          _buildSystemProgressBar('Neumáticos', avgTires),
-          _buildSystemProgressBar('Sistema Eléctrico', avgElectricalSystem),
-          _buildSystemProgressBar('Temperatura de Transmisión', avgTransmissionTemp),
         ],
       ),
     );
@@ -426,26 +396,8 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
     final dateFormatter = DateFormat('dd/MM/yyyy');
     final formattedInspectionDate = dateFormatter.format(vehicle.lastTechnicalInspectionDate);
 
-    // Calcular el estado general del vehículo (promedio de todos los sistemas)
-    final avgCondition = (vehicle.engine + vehicle.fuel + vehicle.tires +
-                          vehicle.electricalSystem + vehicle.transmissionTemperature) / 5;
-
     Color statusColor;
     String statusText;
-
-    if (avgCondition >= 80) {
-      statusColor = Colors.green;
-      statusText = "Excelente";
-    } else if (avgCondition >= 60) {
-      statusColor = Colors.lightGreen;
-      statusText = "Bueno";
-    } else if (avgCondition >= 40) {
-      statusColor = Colors.amber;
-      statusText = "Regular";
-    } else {
-      statusColor = Colors.redAccent;
-      statusText = "Atención requerida";
-    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -453,7 +405,6 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
         color: Colors.grey[800],
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: statusColor.withOpacity(0.5),
           width: 1,
         ),
       ),
@@ -494,16 +445,7 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  statusText,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -541,16 +483,6 @@ class _DriverVehiclesAnalyticsScreenState extends State<DriverVehiclesAnalyticsS
                 fontSize: 16,
               ),
             ),
-            const SizedBox(height: 12),
-            _buildDetailedSystemBar('Motor', vehicle.engine, Icons.local_fire_department),
-            const SizedBox(height: 8),
-            _buildDetailedSystemBar('Combustible', vehicle.fuel, Icons.local_gas_station),
-            const SizedBox(height: 8),
-            _buildDetailedSystemBar('Neumáticos', vehicle.tires, Icons.tire_repair),
-            const SizedBox(height: 8),
-            _buildDetailedSystemBar('Sist. Eléctrico', vehicle.electricalSystem, Icons.electrical_services),
-            const SizedBox(height: 8),
-            _buildDetailedSystemBar('Transmisión', vehicle.transmissionTemperature, Icons.settings),
           ],
         ),
       ),

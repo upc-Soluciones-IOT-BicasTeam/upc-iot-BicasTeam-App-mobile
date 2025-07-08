@@ -55,7 +55,7 @@ class AnalyticsService {
 
         // Contar vehículos asociados a este conductor
         final driverVehicles = vehicles.where(
-          (vehicle) => vehicle.driverName == '${carrier.name} ${carrier.lastName}'
+          (vehicle) => vehicle.driverId == '${carrier.name} ${carrier.lastName}'
         ).length;
 
         return DriverAnalyticsModel(
@@ -156,7 +156,7 @@ class AnalyticsService {
   Future<List<VehicleModel>> getVehiclesByDriverName(String driverName) async {
     try {
       final allVehicles = await getAllVehiclesForAnalytics();
-      return allVehicles.where((vehicle) => vehicle.driverName == driverName).toList();
+      return allVehicles.where((vehicle) => vehicle.driverId == driverName).toList();
     } catch (e) {
       print('Error fetching vehicles for driver: $e');
       rethrow;

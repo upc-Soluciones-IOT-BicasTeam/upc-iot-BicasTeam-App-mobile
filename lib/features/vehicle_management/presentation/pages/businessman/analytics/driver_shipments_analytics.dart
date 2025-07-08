@@ -227,10 +227,7 @@ class _DriverShipmentsAnalyticsScreenState extends State<DriverShipmentsAnalytic
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'Email: ${_selectedDriver!.email}',
-                  style: const TextStyle(color: Colors.grey),
-                ),
+                
                 const SizedBox(height: 4),
                 Row(
                   children: [

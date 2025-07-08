@@ -432,22 +432,17 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
             title: const Text('CERRAR SESIÓN', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => LoginScreen(
-                    onLoginClicked: (username, password) {
-                      print('Usuario: $username, Contraseña: $password');
-                    },
-                    onRegisterClicked: () {
-                      print('Registrarse');
-                    },
-                  ),
-                ),
-                (Route<dynamic> route) => false,
-              );
-            },
+            // CÓDIGO CORREGIDO SIN PARÁMETROS
+onTap: () {
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(
+      // Simplemente llama al constructor de LoginScreen sin argumentos
+      builder: (context) => const LoginScreen(), 
+    ),
+    (Route<dynamic> route) => false,
+  );
+},
           ),
         ],
       ),
