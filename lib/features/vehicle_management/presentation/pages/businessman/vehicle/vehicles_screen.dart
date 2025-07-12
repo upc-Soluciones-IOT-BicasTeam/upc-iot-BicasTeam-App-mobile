@@ -146,13 +146,10 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Marca: ${vehicle.brand}', style: const TextStyle(color: Colors.white, fontSize: 16)),
+                    Text('${vehicle.brand}', style: const TextStyle(color: Colors.white, fontSize: 16)),
                     Text('Modelo: ${vehicle.model}', style: const TextStyle(color: Colors.white70)),
                     Text('Placa: ${vehicle.licensePlate}', style: const TextStyle(color: Colors.white70)),
-                    Text('Color: ${vehicle.color}', style: const TextStyle(color: Colors.white70)),
-                    Text('Carga Máx: ${vehicle.maxLoad} t', style: const TextStyle(color: Colors.white70)),
-                    Text('Velocidad: ${vehicle.speed}', style: const TextStyle(color: Colors.white70)),
-                    Text('Ubicación: ${vehicle.location}', style: const TextStyle(color: Colors.white60)),
+                    Text('Color: ${vehicle.color}', style: const TextStyle(color: Colors.white70))
                   ],
                 ),
               ),
