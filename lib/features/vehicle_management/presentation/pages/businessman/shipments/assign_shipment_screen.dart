@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:movigestion_mobile/core/app_constants.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/profile/profile_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/vehicle/vehicles_screen.dart';
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/reports/reports_screen.dart';
@@ -51,7 +52,7 @@ class _AssignShipmentScreenState extends State<AssignShipmentScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8080/api/shipments'),
+        Uri.parse('${AppConstants.baseUrl}${AppConstants.shipment}'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'driverName': driverName,
