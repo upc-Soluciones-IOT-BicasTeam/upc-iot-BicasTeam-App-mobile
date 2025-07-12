@@ -16,6 +16,7 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
+        print('Perfiles recibidos del backend: $data');
         // Filtrar solo transportistas
         final carriers = data
             .where((profile) => profile['type'] == 'Transportista')
@@ -28,6 +29,43 @@ class AnalyticsService {
       }
     } catch (e) {
       print('Error fetching carrier profiles: $e');
+      rethrow;
+    }
+  }
+
+  // Obtener vehículos por conductor
+  Future<List<VehicleModel>> getVehiclesByDriverId(int driverId) async {
+    try {
+      final allVehicles = await getAllVehiclesForAnalytics();
+      return allVehicles.where((vehicle) => vehicle.driverId == driverId).toList();
+    } catch (e) {
+      print('Error fetching vehicles for driver: $e');
+      rethrow;
+    }
+  }
+
+  // Agrupar vehículos por driverId
+  Map<String, List<VehicleModel>> groupVehiclesByDriver(List<VehicleModel> vehicles) {
+    final Map<String, List<VehicleModel>> grouped = {};
+
+    for (var vehicle in vehicles) {
+      final driverKey = 'Conductor ID ${vehicle.driverId ?? 'sin asignar'}';
+      if (!grouped.containsKey(driverKey)) {
+        grouped[driverKey] = [];
+      }
+      grouped[driverKey]!.add(vehicle);
+    }
+
+    return grouped;
+  }
+
+  // Obtener vehículos agrupados
+  Future<Map<String, List<VehicleModel>>> getGroupedVehiclesByDriver() async {
+    try {
+      final allVehicles = await getAllVehiclesForAnalytics();
+      return groupVehiclesByDriver(allVehicles);
+    } catch (e) {
+      print('Error grouping vehicles by driver: $e');
       rethrow;
     }
   }
@@ -55,7 +93,7 @@ class AnalyticsService {
 
         // Contar vehículos asociados a este conductor
         final driverVehicles = vehicles.where(
-          (vehicle) => vehicle.driverId == '${carrier.name} ${carrier.lastName}'
+          (vehicle) => vehicle.driverId == carrier.id
         ).length;
 
         return DriverAnalyticsModel(
@@ -148,17 +186,6 @@ class AnalyticsService {
       return allShipments.where((shipment) => shipment.driverName == driverName).toList();
     } catch (e) {
       print('Error fetching shipments for driver: $e');
-      rethrow;
-    }
-  }
-
-  // Obtener vehículos por conductor
-  Future<List<VehicleModel>> getVehiclesByDriverName(String driverName) async {
-    try {
-      final allVehicles = await getAllVehiclesForAnalytics();
-      return allVehicles.where((vehicle) => vehicle.driverId == driverName).toList();
-    } catch (e) {
-      print('Error fetching vehicles for driver: $e');
       rethrow;
     }
   }

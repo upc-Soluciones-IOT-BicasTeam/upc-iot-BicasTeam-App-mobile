@@ -21,7 +21,7 @@ class AnalyticsRepository {
     return await analyticsService.getShipmentsByDriverName(driverName);
   }
 
-  Future<List<VehicleModel>> getVehiclesByDriverName(String driverName) async {
-    return await analyticsService.getVehiclesByDriverName(driverName);
+  Future<List<VehicleModel>> getVehiclesByDriverId(int driverId) async {
+    return await analyticsService.getVehiclesByDriverId(driverId);
   }
 }

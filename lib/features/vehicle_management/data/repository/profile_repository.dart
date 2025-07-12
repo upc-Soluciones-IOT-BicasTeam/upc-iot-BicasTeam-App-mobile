@@ -58,4 +58,8 @@ class ProfileRepository {
     // Usamos el toJsonForUpdate para enviar solo los campos necesarios
     return await profileService.updateProfile(profileId, profileToUpdate.toJsonForUpdate());
   }
+
+  Future<List<ProfileModel>> getAllProfiles() async {
+    return await profileService.getAllProfiles();
+  }
 }

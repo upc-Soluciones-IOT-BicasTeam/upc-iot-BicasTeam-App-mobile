@@ -73,4 +73,21 @@ class ProfileService {
       return null;
     }
   }
+  Future<List<ProfileModel>> getAllProfiles() async {
+    final url = Uri.parse('${AppConstants.baseUrl}${AppConstants.profile}');
+    try {
+      final response = await http.get(url);
+  
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((e) => ProfileModel.fromJson(e)).toList();
+      } else {
+        print('Error al obtener perfiles. Código: ${response.statusCode}');
+        throw Exception('Error al obtener perfiles');
+      }
+    } catch (e) {
+      print('Error en getAllProfiles: $e');
+      rethrow;
+    }
+  }
 }
