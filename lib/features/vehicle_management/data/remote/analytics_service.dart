@@ -16,7 +16,6 @@ class AnalyticsService {
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        print('Perfiles recibidos del backend: $data');
         // Filtrar solo transportistas
         final carriers = data
             .where((profile) => profile['type'] == 'Transportista')
@@ -181,12 +180,15 @@ class AnalyticsService {
 
   // Obtener detalles de envíos por conductor
   Future<List<ShipmentModel>> getShipmentsByDriverName(String driverName) async {
-    try {
-      final allShipments = await getAllShipmentsForAnalytics();
-      return allShipments.where((shipment) => shipment.driverName == driverName).toList();
-    } catch (e) {
-      print('Error fetching shipments for driver: $e');
-      rethrow;
-    }
+  try {
+    final allShipments = await getAllShipmentsForAnalytics();
+
+    return allShipments.where((shipment) =>
+      shipment.driverName.trim().toLowerCase() == driverName.trim().toLowerCase()
+    ).toList();
+  } catch (e) {
+    print('Error fetching shipments for driver: $e');
+    rethrow;
   }
+}
 }

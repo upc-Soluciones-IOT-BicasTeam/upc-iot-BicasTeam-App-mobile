@@ -31,6 +31,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<DriverAnalyticsModel> _driversAnalytics = [];
 
   int _totalVehicles = 0;
+  int _totalReports = 0;
+  int _totalShipments = 0;
 
   @override
   void initState() {
@@ -46,10 +48,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     try {
       final analytics = await _analyticsService.getDriversAnalytics();
       final vehicles = await _analyticsService.getAllVehiclesForAnalytics();
+      final reports = await _analyticsService.getAllReportsForAnalytics();
+      final shipments = await _analyticsService.getAllShipmentsForAnalytics();
 
       setState(() {
         _driversAnalytics = analytics;
         _totalVehicles = vehicles.length;
+        _totalReports = reports.length;
+        _totalShipments = shipments.length;
         _isLoading = false;
       });
     } catch (e) {
@@ -129,8 +135,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   Widget _buildAnalyticsSummaryCards() {
     // Calcular totales
     int totalReports = 0;
-    int totalShipments = 0;
     int totalVehicles = _totalVehicles;
+    int totalShipments = _totalShipments;
 
     for (var driver in _driversAnalytics) {
       totalReports += driver.totalReports;
@@ -231,10 +237,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DriverShipmentsAnalyticsScreen(
-                      name: widget.name,
-                      lastName: widget.lastName,
-                    ),
+                    builder: (context) => DriverShipmentsAnalyticsScreen(),
                   ),
                 );
               },

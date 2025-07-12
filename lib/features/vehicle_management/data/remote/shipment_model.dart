@@ -25,7 +25,7 @@ class ShipmentModel {
       userId: json['userId'],
       destiny: json['destiny'],
       description: json['description'],
-      createdAt: DateTime.parse(json['createdAt']),
+      createdAt: DateTime.tryParse(json['createdAt']) ?? DateTime(2000),
       status: json['status'],
       driverName: json['driverName'],
     );
