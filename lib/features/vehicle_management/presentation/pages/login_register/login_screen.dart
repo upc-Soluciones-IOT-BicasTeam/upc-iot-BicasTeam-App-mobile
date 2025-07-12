@@ -133,6 +133,8 @@ class LoginScreen extends StatelessWidget {
               Widget targetScreen;
               if (user.role == 'manager') {
                 targetScreen = ProfileScreen(
+                  userId: user.id,
+                  email: user.email,
                   name: profile.name,
                   lastName: profile.lastName,
                 );

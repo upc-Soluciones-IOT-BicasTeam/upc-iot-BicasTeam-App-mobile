@@ -11,13 +11,17 @@ import 'package:movigestion_mobile/features/vehicle_management/presentation/page
 import 'package:movigestion_mobile/features/vehicle_management/presentation/pages/businessman/analytics/analytics_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String name;
-  final String lastName;
+  final String? name;
+  final String? lastName;
+  final int? userId;
+  final String? email;
 
   const ProfileScreen({
     Key? key,
-    required this.name,
-    required this.lastName,
+    this.name,
+    this.lastName,
+    this.userId,
+    this.email,
   }) : super(key: key);
 
   @override
@@ -48,37 +52,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
     confirmPasswordController = TextEditingController();
     dialogEmailController = TextEditingController();
     dialogPasswordController = TextEditingController();
-    _fetchProfileData();
+
+    if (widget.userId != null) {
+      // Nueva forma: obtiene perfil desde backend
+      emailController.text = widget.email ?? '';
+      _fetchProfileData();
+    } else {
+      // Forma antigua: solo muestra datos estáticos
+      nameController.text = widget.name ?? '';
+      lastNameController.text = widget.lastName ?? '';
+      emailController.text = '';
+      _isLoading = false;
+    }
   }
 
   Future<void> _fetchProfileData() async {
     try {
-      final profilesResponse = await http.get(Uri.parse('https://app-241107014459.azurewebsites.net/api/profiles'));
+      if (widget.userId == null) {
+        _showSnackbar('No se proporcionó userId.');
+        return;
+      }
 
-      if (profilesResponse.statusCode == 200) {
-        List<dynamic> profiles = json.decode(profilesResponse.body);
-        final matchingProfile = profiles.firstWhere(
-              (profile) =>
-          profile['name'].toString().trim().toLowerCase() == widget.name.trim().toLowerCase() &&
-              profile['lastName'].toString().trim().toLowerCase() == widget.lastName.trim().toLowerCase(),
-          orElse: () => null,
-        );
+      final profile = await profileService.getProfileByUserId(widget.userId!);
 
-        if (matchingProfile != null) {
-          setState(() {
-            nameController.text = matchingProfile['name'];
-            lastNameController.text = matchingProfile['lastName'];
-            emailController.text = matchingProfile['email'];
-            userType = matchingProfile['type'];
-            _isLoading = false;
-          });
-        } else {
-          _showSnackbar('No se encontró un perfil que coincida.');
-        }
+      if (profile != null) {
+        setState(() {
+          nameController.text = profile.name;
+          lastNameController.text = profile.lastName;
+          _isLoading = false;
+        });
       } else {
-        _showSnackbar('Error al cargar los perfiles.');
+        _showSnackbar('No se encontró el perfil para este usuario.');
       }
     } catch (e) {
+      print('ERROR EN _fetchProfileData: $e');
       _showSnackbar('Error al obtener los datos del perfil.');
     } finally {
       setState(() {
@@ -302,12 +309,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-          _buildDrawerItem(Icons.person, 'PROFILE', ProfileScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.people, 'CARRIERS', CarrierProfilesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.report, 'REPORTS', ReportsScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.directions_car, 'VEHICLES', VehiclesScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.local_shipping, 'SHIPMENTS', ShipmentsScreen(name: widget.name, lastName: widget.lastName)),
-          _buildDrawerItem(Icons.analytics, 'ANALYTICS', AnalyticsScreen(name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.person, 'PROFILE', ProfileScreen( userId: widget.userId, email: widget.email,name: widget.name, lastName: widget.lastName)),
+          _buildDrawerItem(Icons.people, 'CARRIERS', CarrierProfilesScreen(name: widget.name ?? '', lastName: widget.lastName ?? '')),
+          _buildDrawerItem(Icons.report, 'REPORTS', ReportsScreen(name: widget.name ?? '', lastName: widget.lastName ?? '')),
+          _buildDrawerItem(Icons.directions_car, 'VEHICLES', VehiclesScreen(name: widget.name ?? '', lastName: widget.lastName ?? '')),
+          _buildDrawerItem(Icons.local_shipping, 'SHIPMENTS', ShipmentsScreen(name: widget.name ?? '', lastName: widget.lastName ?? '')),
+          _buildDrawerItem(Icons.analytics, 'ANALYTICS', AnalyticsScreen(name: widget.name ?? '', lastName: widget.lastName ?? '')),
           const SizedBox(height: 160),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.white),
